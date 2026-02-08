@@ -30,7 +30,7 @@ def extract_highlights(release_notes: str, version: str, limit: int = 5) -> List
 
 def build_x_copy(version: str, highlights: List[str], url: str) -> str:
     top = highlights[:3]
-    lines = [f"codex-mem {version} is live."]
+    lines = [f"codex-mem {version} is live: 99.84% fewer context tokens, ~60ms to first memory context."]
     for item in top:
         lines.append(f"- {item}")
     lines.append("Built for Codex: local memory, progressive retrieval, and launch-ready asset workflow.")
@@ -40,7 +40,11 @@ def build_x_copy(version: str, highlights: List[str], url: str) -> str:
 
 def build_reddit_copy(version: str, highlights: List[str], url: str) -> str:
     lines = [
-        f"Title: [Showcase] codex-mem {version}: Codex-native persistent memory + launch asset toolkit",
+        f"Title: [Showcase] codex-mem {version}: 99.84% fewer context tokens + ~60ms startup to first memory context",
+        "",
+        "Primary benchmark hook:",
+        "- 99.84% token reduction (379275 -> 596)",
+        "- 59.5ms median to first memory context (Layer-1)",
         "",
         "What it does:",
         "- Local-first memory and progressive retrieval (search -> timeline -> full detail)",
@@ -56,7 +60,7 @@ def build_reddit_copy(version: str, highlights: List[str], url: str) -> str:
 
 
 def build_ph_copy(version: str, highlights: List[str], url: str) -> str:
-    tagline = "Persistent memory for Codex, with progressive retrieval and launch-ready workflows"
+    tagline = "99.84% fewer context tokens and ~60ms startup to first memory context for Codex workflows"
     one_liner = (
         "codex-mem helps Codex keep context across sessions, retrieve only relevant history, "
         "and package your product story with reusable GIF/screenshot assets."

@@ -1,8 +1,12 @@
 # codex-mem
 
+Cut context tokens by **99.84%** and reach first memory context in **~60 ms** (median local benchmark).
 Codex-native persistent memory with progressive retrieval, local viewer UX, and MCP-ready integration.
 
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)
+![Token Savings](https://img.shields.io/badge/token_saving-99.84%25-16a34a)
+![Startup](https://img.shields.io/badge/startup_to_first_context-59.5ms-0ea5e9)
+![Startup Speedup](https://img.shields.io/badge/startup_speedup-1.32x-0891b2)
 ![MCP](https://img.shields.io/badge/MCP-ready-0A7C66)
 ![Runtime](https://img.shields.io/badge/runtime-stable%20%7C%20beta-0f766e)
 ![Smoke Test](https://img.shields.io/badge/smoke_test-passing-16a34a)
@@ -10,6 +14,10 @@ Codex-native persistent memory with progressive retrieval, local viewer UX, and 
 ![License](https://img.shields.io/badge/license-not%20set-lightgrey)
 
 [Quick Start](#quick-start) • [Feature Tour](#feature-tour) • [Comparison](#comparison-table) • [Release Notes](RELEASE_NOTES.md) • [Docs](Documentation/CODEX_MEM.md)
+
+Benchmark source:
+- [`Documentation/benchmarks/marketing_claims_20260208.json`](Documentation/benchmarks/marketing_claims_20260208.json)
+- Reproduce with: `python3 Scripts/benchmark_marketing_claim.py --root . --out Documentation/benchmarks/marketing_claims_20260208.json`
 
 ## Why codex-mem
 
