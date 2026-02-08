@@ -2,45 +2,41 @@
 
 ## Prerequisites
 
-- A GitHub repo: `StartripAI/codex-mem`
-- A PAT with repo write permission
+- A GitHub repo: `<YOUR_ORG_OR_USER>/codex-mem`
+- GitHub CLI authenticated (`gh auth login`) or browser-authenticated git credentials
 
 ## 1) Create repo (choose one)
 
 ### Option A: Web UI
-Create `https://github.com/new` with name `codex-mem` under org/user `StartripAI`.
+Create `https://github.com/new` with name `codex-mem` under your org/user account.
 
-### Option B: API (with PAT)
+### Option B: GitHub CLI
 
 ```bash
-export GITHUB_TOKEN='<YOUR_PAT>'
-curl -sS -X POST https://api.github.com/user/repos \
-  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-  -H "Accept: application/vnd.github+json" \
-  -d '{"name":"codex-mem","private":false}'
+gh repo create codex-mem --public --source=. --remote=origin --push=false
 ```
 
 ## 2) Push current local branch
 
 ```bash
-cd /Users/alfred/projects/codex-mem
-git remote set-url origin https://github.com/StartripAI/codex-mem.git
+cd /ABS/PATH/codex-mem
+git remote set-url origin https://github.com/<YOUR_ORG_OR_USER>/codex-mem.git
 # recommended: use PAT once then store by credential helper
 git push -u origin codex/init
 ```
 
-## 3) If HTTPS prompts fail, use PAT in URL once
+## 3) If push auth fails, re-auth via GitHub CLI
 
 ```bash
-cd /Users/alfred/projects/codex-mem
-git push -u https://<GITHUB_USERNAME>:<YOUR_PAT>@github.com/StartripAI/codex-mem.git codex/init
+gh auth login
+git push -u origin codex/init
 ```
 
 ## 4) Open PR (optional)
 
 ```bash
 # if main exists and you want PR from codex/init
-# https://github.com/StartripAI/codex-mem/compare/main...codex/init
+# https://github.com/<YOUR_ORG_OR_USER>/codex-mem/compare/main...codex/init
 ```
 
 ## 5) Distribution channels beyond GitHub and X

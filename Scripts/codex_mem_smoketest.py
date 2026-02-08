@@ -181,7 +181,7 @@ def run_smoke(root: pathlib.Path) -> Dict[str, Any]:
                 "post-tool-use",
                 "s1",
                 "shell",
-                "token=secret-123 should be hidden from default retrieval",
+                "credential value should be hidden from default retrieval",
                 "--project",
                 project,
                 "--title",

@@ -117,7 +117,7 @@ Privacy controls:
 Example:
 
 ```bash
-bash Scripts/codex_mem.sh tool s100 shell "token=abc123" --project my-project \
+bash Scripts/codex_mem.sh tool s100 shell "credential=<REDACTED_VALUE>" --project my-project \
   --tag auth --privacy-tag private --privacy-tag redact
 ```
 

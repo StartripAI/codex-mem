@@ -9,7 +9,7 @@
 ## Clone
 
 ```bash
-git clone https://github.com/StartripAI/codex-mem.git
+git clone https://github.com/<YOUR_ORG_OR_USER>/codex-mem.git
 cd codex-mem
 ```
 
