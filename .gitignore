@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+.codex_mem/
+.codex_knowledge/
+.DS_Store

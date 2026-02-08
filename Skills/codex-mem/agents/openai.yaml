@@ -1,0 +1,27 @@
+name: codex-mem
+description: Codex memory skill with MCP-powered progressive retrieval.
+instructions: |
+  Use codex-mem tools to persist and retrieve cross-session context.
+  Default workflow: mem_search -> mem_timeline -> mem_get_observations.
+  Use mem_ask when codebase facts from repo_knowledge are also needed.
+mcp:
+  servers:
+    codex-mem:
+      command: python3
+      args:
+        - Scripts/codex_mem_mcp.py
+        - --root
+        - .
+        - --project-default
+        - hopenote
+tools:
+  - mem_search
+  - mem_timeline
+  - mem_get_observations
+  - mem_ask
+  - mem_session_start
+  - mem_user_prompt_submit
+  - mem_post_tool_use
+  - mem_stop
+  - mem_session_end
+  - mem_summarize_session
