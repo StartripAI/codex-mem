@@ -25,6 +25,10 @@
   - feature GIF placeholders
   - comparison table
   - release notes entry point
+- added launch asset production kit:
+  - `Documentation/LAUNCH_ASSET_PLAYBOOK.md`
+  - `Assets/LaunchKit/` structure
+  - GIF shotlist + PRD screenshot copy templates
 - docs expanded and aligned with current command surface:
   - operational guide
   - architecture

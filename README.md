@@ -35,6 +35,13 @@ North star:
 
 ![Privacy and Mode GIF Placeholder](https://placehold.co/1200x640/1d4ed8/ffffff?text=Feature+GIF+Placeholder+%7C+Dual-Tag+Privacy+%2B+Stable%2FBeta)
 
+## Launch Asset Production Kit
+
+- Playbook: [`Documentation/LAUNCH_ASSET_PLAYBOOK.md`](Documentation/LAUNCH_ASSET_PLAYBOOK.md)
+- Asset root: [`Assets/LaunchKit/README.md`](Assets/LaunchKit/README.md)
+- GIF shotlist template: [`Assets/LaunchKit/gif/spec/SHOTLIST_TEMPLATE.md`](Assets/LaunchKit/gif/spec/SHOTLIST_TEMPLATE.md)
+- PRD screenshot copy template: [`Assets/LaunchKit/screenshots/prd-copy/PRD_SCREENSHOT_COPY_TEMPLATE.md`](Assets/LaunchKit/screenshots/prd-copy/PRD_SCREENSHOT_COPY_TEMPLATE.md)
+
 ## Core Capabilities
 
 ### Lifecycle capture
@@ -282,6 +289,7 @@ Additional channels beyond GitHub/X:
 - [Installation](Documentation/INSTALLATION.md)
 - [MCP Tools](Documentation/MCP_TOOLS.md)
 - [Architecture](Documentation/ARCHITECTURE.md)
+- [Launch Asset Playbook](Documentation/LAUNCH_ASSET_PLAYBOOK.md)
 - [Troubleshooting](Documentation/TROUBLESHOOTING.md)
 - [Release Notes](RELEASE_NOTES.md)
 - [Publishing Guide](PUBLISH.md)
