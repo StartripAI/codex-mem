@@ -4,9 +4,12 @@ MCP server for codex_mem.
 
 Provides Codex-accessible tools:
 - mem_search
+- mem_nl_search
 - mem_timeline
 - mem_get_observations
 - mem_ask
+- mem_config_get
+- mem_config_set
 - mem_session_start
 - mem_user_prompt_submit
 - mem_post_tool_use
@@ -27,7 +30,7 @@ from typing import Any, Dict, List, Mapping, Sequence
 
 
 SERVER_NAME = "codex-mem-mcp"
-SERVER_VERSION = "0.1.0"
+SERVER_VERSION = "0.2.0"
 PROTOCOL_VERSION = "2024-11-05"
 
 
@@ -110,8 +113,27 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
             "query": {"type": "string"},
             "project": {"type": "string"},
             "session_id": {"type": "string"},
+            "since": {"type": "string"},
+            "until": {"type": "string"},
+            "include_private": {"type": "boolean"},
             "limit": {"type": "integer", "minimum": 1, "maximum": 200},
             "alpha": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+        },
+        ["query"],
+    ),
+    make_tool(
+        "mem_nl_search",
+        "Natural-language project history search (time phrases + intent hints).",
+        {
+            "query": {"type": "string"},
+            "project": {"type": "string"},
+            "session_id": {"type": "string"},
+            "since": {"type": "string"},
+            "until": {"type": "string"},
+            "include_private": {"type": "boolean"},
+            "limit": {"type": "integer", "minimum": 1, "maximum": 200},
+            "alpha": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+            "snippet_chars": {"type": "integer", "minimum": 32, "maximum": 8000},
         },
         ["query"],
     ),
@@ -122,6 +144,7 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
             "id": {"type": "string"},
             "before": {"type": "integer", "minimum": 0, "maximum": 200},
             "after": {"type": "integer", "minimum": 0, "maximum": 200},
+            "include_private": {"type": "boolean"},
             "snippet_chars": {"type": "integer", "minimum": 32, "maximum": 4000},
         },
         ["id"],
@@ -132,6 +155,7 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
         {
             "ids": {"type": "array", "items": {"type": "string"}, "minItems": 1},
             "compact": {"type": "boolean"},
+            "include_private": {"type": "boolean"},
             "snippet_chars": {"type": "integer", "minimum": 32, "maximum": 4000},
         },
         ["ids"],
@@ -149,10 +173,27 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
             "code_module_limit": {"type": "integer", "minimum": 1, "maximum": 100},
             "repo_index_dir": {"type": "string"},
             "alpha": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+            "include_private": {"type": "boolean"},
             "snippet_chars": {"type": "integer", "minimum": 32, "maximum": 8000},
             "prompt_only": {"type": "boolean"},
         },
         ["question"],
+    ),
+    make_tool(
+        "mem_config_get",
+        "Read runtime configuration (channel/view refresh/endless mode).",
+        {},
+        [],
+    ),
+    make_tool(
+        "mem_config_set",
+        "Update runtime configuration (stable/beta, refresh interval, beta endless mode).",
+        {
+            "channel": {"type": "string", "enum": ["stable", "beta"]},
+            "viewer_refresh_sec": {"type": "integer", "minimum": 1, "maximum": 60},
+            "beta_endless_mode": {"type": "boolean"},
+        },
+        [],
     ),
     make_tool(
         "mem_session_start",
@@ -188,6 +229,7 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
             "file_path": {"type": "string"},
             "exit_code": {"type": "integer"},
             "tags": {"type": "array", "items": {"type": "string"}},
+            "privacy_tags": {"type": "array", "items": {"type": "string"}},
             "compact": {"type": "boolean"},
             "compact_chars": {"type": "integer", "minimum": 128, "maximum": 20000},
         },
@@ -296,10 +338,37 @@ class CodexMemMCPServer:
             cmd = ["search", query, "--project", project]
             if arguments.get("session_id"):
                 cmd.extend(["--session-id", str(arguments["session_id"])])
+            if arguments.get("since"):
+                cmd.extend(["--since", str(arguments["since"])])
+            if arguments.get("until"):
+                cmd.extend(["--until", str(arguments["until"])])
+            if bool(arguments.get("include_private")):
+                cmd.append("--include-private")
             if arguments.get("limit") is not None:
                 cmd.extend(["--limit", str(int(arguments["limit"]))])
             if arguments.get("alpha") is not None:
                 cmd.extend(["--alpha", str(float(arguments["alpha"]))])
+            return self.text_content(self.run_cli(cmd))
+
+        if name == "mem_nl_search":
+            query = str(self.get_arg(arguments, "query", "")).strip()
+            if not query:
+                raise MCPError(-32602, "`query` is required")
+            cmd = ["nl-search", query, "--project", project]
+            if arguments.get("session_id"):
+                cmd.extend(["--session-id", str(arguments["session_id"])])
+            if arguments.get("since"):
+                cmd.extend(["--since", str(arguments["since"])])
+            if arguments.get("until"):
+                cmd.extend(["--until", str(arguments["until"])])
+            if bool(arguments.get("include_private")):
+                cmd.append("--include-private")
+            if arguments.get("limit") is not None:
+                cmd.extend(["--limit", str(int(arguments["limit"]))])
+            if arguments.get("alpha") is not None:
+                cmd.extend(["--alpha", str(float(arguments["alpha"]))])
+            if arguments.get("snippet_chars") is not None:
+                cmd.extend(["--snippet-chars", str(int(arguments["snippet_chars"]))])
             return self.text_content(self.run_cli(cmd))
 
         if name == "mem_timeline":
@@ -311,6 +380,8 @@ class CodexMemMCPServer:
                 cmd.extend(["--before", str(int(arguments["before"]))])
             if arguments.get("after") is not None:
                 cmd.extend(["--after", str(int(arguments["after"]))])
+            if bool(arguments.get("include_private")):
+                cmd.append("--include-private")
             if arguments.get("snippet_chars") is not None:
                 cmd.extend(["--snippet-chars", str(int(arguments["snippet_chars"]))])
             return self.text_content(self.run_cli(cmd))
@@ -322,6 +393,8 @@ class CodexMemMCPServer:
             cmd = ["get-observations", *[str(v) for v in ids]]
             if bool(arguments.get("compact")):
                 cmd.append("--compact")
+            if bool(arguments.get("include_private")):
+                cmd.append("--include-private")
             if arguments.get("snippet_chars") is not None:
                 cmd.extend(["--snippet-chars", str(int(arguments["snippet_chars"]))])
             return self.text_content(self.run_cli(cmd))
@@ -345,11 +418,27 @@ class CodexMemMCPServer:
                 cmd.extend(["--repo-index-dir", str(arguments["repo_index_dir"])])
             if arguments.get("alpha") is not None:
                 cmd.extend(["--alpha", str(float(arguments["alpha"]))])
+            if bool(arguments.get("include_private")):
+                cmd.append("--include-private")
             if arguments.get("snippet_chars") is not None:
                 cmd.extend(["--snippet-chars", str(int(arguments["snippet_chars"]))])
             if bool(arguments.get("prompt_only")):
                 cmd.append("--prompt-only")
                 return self.text_content(self.run_cli(cmd, expect_json=False))
+            return self.text_content(self.run_cli(cmd))
+
+        if name == "mem_config_get":
+            return self.text_content(self.run_cli(["config-get"]))
+
+        if name == "mem_config_set":
+            cmd = ["config-set"]
+            if arguments.get("channel"):
+                cmd.extend(["--channel", str(arguments["channel"])])
+            if arguments.get("viewer_refresh_sec") is not None:
+                cmd.extend(["--viewer-refresh-sec", str(int(arguments["viewer_refresh_sec"]))])
+            if arguments.get("beta_endless_mode") is not None:
+                enabled = bool(arguments["beta_endless_mode"])
+                cmd.extend(["--beta-endless-mode", "on" if enabled else "off"])
             return self.text_content(self.run_cli(cmd))
 
         if name == "mem_session_start":
@@ -390,6 +479,10 @@ class CodexMemMCPServer:
             if isinstance(tags, list):
                 for tag in tags:
                     cmd.extend(["--tag", str(tag)])
+            privacy_tags = arguments.get("privacy_tags")
+            if isinstance(privacy_tags, list):
+                for tag in privacy_tags:
+                    cmd.extend(["--privacy-tag", str(tag)])
             if bool(arguments.get("compact")):
                 cmd.append("--compact")
             if arguments.get("compact_chars") is not None:

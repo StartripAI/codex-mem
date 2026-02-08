@@ -42,3 +42,26 @@ git push -u https://<GITHUB_USERNAME>:<YOUR_PAT>@github.com/StartripAI/codex-mem
 # if main exists and you want PR from codex/init
 # https://github.com/StartripAI/codex-mem/compare/main...codex/init
 ```
+
+## 5) Distribution channels beyond GitHub and X
+
+- Product Hunt (launch post + demo GIF)
+- Hacker News (`Show HN`)
+- Reddit communities:
+  - `r/LocalLLaMA`
+  - `r/ChatGPTCoding`
+  - `r/programming` (follow each subreddit rules)
+- Dev.to article with install and smoke-test snippet
+- Medium/Substack technical write-up
+- Discord/Slack communities (AI engineering + agent tooling)
+- Awesome lists PRs:
+  - Awesome MCP / AI coding tool lists
+  - agent memory tooling lists
+
+## 6) Codex integration packaging checklist
+
+- Keep MCP command deterministic and copy-pasteable
+- Keep skill files in `Skills/codex-mem/`
+- Keep one-command validation (`python3 Scripts/codex_mem_smoketest.py --root .`)
+- Include screenshots/GIF of local web viewer in README
+- Tag releases with clear changelog (`v0.x.y`)

@@ -37,8 +37,22 @@ DEFAULT_VECTOR_DIM = 256
 DEFAULT_PROJECT = "default"
 DEFAULT_SNIPPET_CHARS = 240
 DEFAULT_TOOL_COMPACT_CHARS = 4000
+DEFAULT_CHANNEL = "stable"
+CHANNEL_CHOICES = {"stable", "beta"}
 
-BLOCKED_MEMORY_TAGS = {"no_mem", "private", "sensitive", "secret"}
+PRIVACY_BLOCK_TAGS = {"no_mem", "block", "skip", "secret_block"}
+PRIVACY_PRIVATE_TAGS = {"private", "sensitive", "secret"}
+PRIVACY_REDACT_TAGS = {"redact", "mask", "sensitive", "secret"}
+DEFAULT_REDACTION_RULES = (
+    (
+        re.compile(r"(?i)(api[_-]?key|token|secret|password)\s*[:=]\s*([^\s,;]+)"),
+        r"\1=[REDACTED]",
+    ),
+    (
+        re.compile(r"(?i)bearer\s+[a-z0-9._\-]+"),
+        "Bearer [REDACTED]",
+    ),
+)
 
 TOKEN_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,}|[0-9]+|[\u4e00-\u9fff]+")
 IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -220,8 +234,11 @@ def init_schema(conn: sqlite3.Connection) -> None:
         );
         """
     )
-    upsert_meta(conn, "index_version", INDEX_VERSION)
-    upsert_meta(conn, "vector_dim", str(DEFAULT_VECTOR_DIM))
+    ensure_meta_default(conn, "index_version", INDEX_VERSION)
+    ensure_meta_default(conn, "vector_dim", str(DEFAULT_VECTOR_DIM))
+    ensure_meta_default(conn, "channel", DEFAULT_CHANNEL)
+    ensure_meta_default(conn, "viewer_refresh_sec", "3")
+    ensure_meta_default(conn, "beta_endless_mode", "0")
     conn.commit()
 
 
@@ -235,9 +252,156 @@ def upsert_meta(conn: sqlite3.Connection, key: str, value: str) -> None:
     )
 
 
+def ensure_meta_default(conn: sqlite3.Connection, key: str, value: str) -> None:
+    conn.execute(
+        """
+        INSERT INTO meta(key, value) VALUES(?, ?)
+        ON CONFLICT(key) DO NOTHING
+        """,
+        (key, value),
+    )
+
+
 def fetch_meta(conn: sqlite3.Connection) -> Dict[str, str]:
     rows = conn.execute("SELECT key, value FROM meta").fetchall()
     return {str(row["key"]): str(row["value"]) for row in rows}
+
+
+def get_runtime_config(conn: sqlite3.Connection) -> Dict[str, object]:
+    meta = fetch_meta(conn)
+    channel = str(meta.get("channel", DEFAULT_CHANNEL)).strip().lower()
+    if channel not in CHANNEL_CHOICES:
+        channel = DEFAULT_CHANNEL
+    viewer_refresh_sec = int(meta.get("viewer_refresh_sec", "3"))
+    viewer_refresh_sec = max(1, min(60, viewer_refresh_sec))
+    beta_endless_mode = str(meta.get("beta_endless_mode", "0")).strip() in {"1", "true", "yes"}
+    return {
+        "channel": channel,
+        "viewer_refresh_sec": viewer_refresh_sec,
+        "beta_endless_mode": beta_endless_mode,
+    }
+
+
+def set_runtime_config(
+    conn: sqlite3.Connection,
+    *,
+    channel: str | None = None,
+    viewer_refresh_sec: int | None = None,
+    beta_endless_mode: bool | None = None,
+) -> Dict[str, object]:
+    if channel is not None:
+        val = str(channel).strip().lower()
+        if val not in CHANNEL_CHOICES:
+            raise ValueError(f"Unsupported channel: {channel}")
+        upsert_meta(conn, "channel", val)
+    if viewer_refresh_sec is not None:
+        sec = max(1, min(60, int(viewer_refresh_sec)))
+        upsert_meta(conn, "viewer_refresh_sec", str(sec))
+    if beta_endless_mode is not None:
+        upsert_meta(conn, "beta_endless_mode", "1" if beta_endless_mode else "0")
+    conn.commit()
+    return get_runtime_config(conn)
+
+
+def parse_iso_datetime(value: str) -> dt.datetime:
+    txt = value.strip()
+    if txt.endswith("Z"):
+        txt = txt[:-1] + "+00:00"
+    parsed = dt.datetime.fromisoformat(txt)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=dt.timezone.utc)
+    return parsed.astimezone(dt.timezone.utc)
+
+
+def iso_day_range(anchor: dt.datetime) -> Tuple[str, str]:
+    local = anchor.astimezone()
+    start_local = local.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_local = start_local + dt.timedelta(days=1, seconds=-1)
+    return (
+        start_local.astimezone(dt.timezone.utc).isoformat(),
+        end_local.astimezone(dt.timezone.utc).isoformat(),
+    )
+
+
+def parse_natural_query(query: str, now: dt.datetime | None = None) -> Dict[str, object]:
+    """
+    Parse lightweight natural-language filters from query text.
+    Supports relative time phrases and intent hints such as bugfix/release/test.
+    """
+    src = query.strip()
+    current = (now or dt.datetime.now(dt.timezone.utc)).astimezone()
+    lowered = src.lower()
+    since: str | None = None
+    until: str | None = None
+    normalized = src
+
+    def cut(pattern: str) -> bool:
+        nonlocal normalized
+        m = re.search(pattern, normalized, flags=re.IGNORECASE)
+        if not m:
+            return False
+        normalized = (normalized[: m.start()] + " " + normalized[m.end() :]).strip()
+        return True
+
+    if cut(r"\blast\s+week\b"):
+        weekday = current.weekday()
+        start_this_week = current - dt.timedelta(days=weekday)
+        start_last_week = (start_this_week - dt.timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
+        end_last_week = start_last_week + dt.timedelta(days=7, seconds=-1)
+        since = start_last_week.astimezone(dt.timezone.utc).isoformat()
+        until = end_last_week.astimezone(dt.timezone.utc).isoformat()
+    elif cut(r"\bthis\s+week\b"):
+        weekday = current.weekday()
+        start = (current - dt.timedelta(days=weekday)).replace(hour=0, minute=0, second=0, microsecond=0)
+        since = start.astimezone(dt.timezone.utc).isoformat()
+        until = current.astimezone(dt.timezone.utc).isoformat()
+    elif cut(r"\byesterday\b"):
+        anchor = current - dt.timedelta(days=1)
+        since, until = iso_day_range(anchor)
+    elif cut(r"\btoday\b"):
+        since, until = iso_day_range(current)
+    else:
+        m_days = re.search(r"\blast\s+(\d+)\s+days?\b", lowered)
+        if m_days:
+            n = max(1, min(365, int(m_days.group(1))))
+            since_dt = current - dt.timedelta(days=n)
+            since = since_dt.astimezone(dt.timezone.utc).isoformat()
+            until = current.astimezone(dt.timezone.utc).isoformat()
+            cut(r"\blast\s+\d+\s+days?\b")
+
+    intent = "general"
+    intent_keywords: List[str] = []
+    if any(k in lowered for k in ("bug", "fix", "regression", "incident", "hotfix")):
+        intent = "bugfix"
+        intent_keywords = ["bug", "fix", "regression", "incident", "hotfix", "error"]
+    elif any(k in lowered for k in ("release", "launch", "ship")):
+        intent = "release"
+        intent_keywords = ["release", "launch", "ship"]
+    elif any(k in lowered for k in ("test", "coverage", "ci")):
+        intent = "test"
+        intent_keywords = ["test", "coverage", "ci"]
+    elif any(k in lowered for k in ("refactor", "cleanup", "architecture")):
+        intent = "refactor"
+        intent_keywords = ["refactor", "cleanup", "architecture"]
+
+    normalized_query = re.sub(r"\s+", " ", normalized).strip()
+    if not normalized_query:
+        normalized_query = src
+    return {
+        "raw_query": src,
+        "normalized_query": normalized_query,
+        "since": since,
+        "until": until,
+        "intent": intent,
+        "intent_keywords": intent_keywords,
+    }
+
+
+def redact_sensitive_text(text: str) -> str:
+    out = text
+    for pattern, replacement in DEFAULT_REDACTION_RULES:
+        out = pattern.sub(replacement, out)
+    return out
 
 
 def ensure_session(
@@ -405,6 +569,9 @@ def search_events(
     query: str,
     project: str | None,
     session_id: str | None,
+    since: str | None,
+    until: str | None,
+    include_private: bool,
     limit: int,
 ) -> List[sqlite3.Row]:
     if not db_supports_fts5(conn):
@@ -420,6 +587,14 @@ def search_events(
     if session_id:
         clauses.append("e.session_id = ?")
         params.append(session_id)
+    if since:
+        clauses.append("e.created_at >= ?")
+        params.append(since)
+    if until:
+        clauses.append("e.created_at <= ?")
+        params.append(until)
+    if not include_private:
+        clauses.append("COALESCE(json_extract(e.metadata_json, '$.privacy.visibility'), 'public') != 'private'")
     where_sql = " AND ".join(clauses)
     sql = f"""
         SELECT
@@ -447,6 +622,9 @@ def search_observations(
     query: str,
     project: str | None,
     session_id: str | None,
+    since: str | None,
+    until: str | None,
+    include_private: bool,
     limit: int,
 ) -> List[sqlite3.Row]:
     if not db_supports_fts5(conn):
@@ -462,6 +640,14 @@ def search_observations(
     if session_id:
         clauses.append("o.session_id = ?")
         params.append(session_id)
+    if since:
+        clauses.append("o.created_at >= ?")
+        params.append(since)
+    if until:
+        clauses.append("o.created_at <= ?")
+        params.append(until)
+    if not include_private:
+        clauses.append("COALESCE(json_extract(o.metadata_json, '$.privacy.visibility'), 'public') != 'private'")
     where_sql = " AND ".join(clauses)
     sql = f"""
         SELECT
@@ -489,6 +675,9 @@ def blended_search(
     query: str,
     project: str | None,
     session_id: str | None,
+    since: str | None,
+    until: str | None,
+    include_private: bool,
     limit: int,
     vector_dim: int,
     alpha: float,
@@ -498,6 +687,9 @@ def blended_search(
         query=query,
         project=project,
         session_id=session_id,
+        since=since,
+        until=until,
+        include_private=include_private,
         limit=max(10, limit * 3),
     )
     obs_rows = search_observations(
@@ -505,6 +697,9 @@ def blended_search(
         query=query,
         project=project,
         session_id=session_id,
+        since=since,
+        until=until,
+        include_private=include_private,
         limit=max(10, limit * 3),
     )
 
@@ -577,6 +772,36 @@ def blended_search(
     return out[:limit]
 
 
+def filter_results_by_intent(
+    conn: sqlite3.Connection,
+    results: Sequence[SearchResult],
+    *,
+    intent_keywords: Sequence[str],
+    snippet_chars: int,
+    include_private: bool,
+) -> List[SearchResult]:
+    if not intent_keywords:
+        return list(results)
+    kept: List[SearchResult] = []
+    lower_kw = [k.lower() for k in intent_keywords if k.strip()]
+    for item in results:
+        typ, iid = parse_item_id(item.item_id)
+        try:
+            detail = get_item_detail(
+                conn,
+                typ,
+                iid,
+                snippet_chars=snippet_chars,
+                include_private=include_private,
+            )
+        except ValueError:
+            continue
+        text = f"{detail.get('title', '')}\n{detail.get('content', '')}".lower()
+        if any(k in text for k in lower_kw):
+            kept.append(item)
+    return kept
+
+
 def parse_item_id(token: str) -> Tuple[str, int]:
     value = token.strip()
     if not value:
@@ -644,24 +869,32 @@ def timeline_for_event(
     before: int,
     after: int,
     snippet_chars: int,
+    include_private: bool = False,
 ) -> Dict[str, object]:
     anchor = conn.execute(
         """
-        SELECT id, session_id, project, event_kind, title, content, tool_name, file_path, created_at
+        SELECT id, session_id, project, event_kind, title, content, tool_name, file_path, created_at, metadata_json
         FROM events WHERE id = ?
         """,
         (event_id,),
     ).fetchone()
     if not anchor:
         raise ValueError(f"event not found: E{event_id}")
+    anchor_meta = json.loads(anchor["metadata_json"]) if anchor["metadata_json"] else {}
+    anchor_visibility = str(((anchor_meta.get("privacy") or {}).get("visibility", "public"))).lower()
+    if anchor_visibility == "private" and not include_private:
+        raise ValueError(f"event is private: E{event_id}")
 
     session_id = str(anchor["session_id"])
     created_at = str(anchor["created_at"])
+    private_clause = ""
+    if not include_private:
+        private_clause = " AND COALESCE(json_extract(metadata_json, '$.privacy.visibility'), 'public') != 'private'"
     before_rows = conn.execute(
         """
         SELECT id, event_kind, title, content, created_at
         FROM events
-        WHERE session_id = ? AND created_at < ?
+        WHERE session_id = ? AND created_at < ?""" + private_clause + """
         ORDER BY created_at DESC
         LIMIT ?
         """,
@@ -671,7 +904,7 @@ def timeline_for_event(
         """
         SELECT id, event_kind, title, content, created_at
         FROM events
-        WHERE session_id = ? AND created_at > ?
+        WHERE session_id = ? AND created_at > ?""" + private_clause + """
         ORDER BY created_at ASC
         LIMIT ?
         """,
@@ -725,16 +958,21 @@ def timeline_for_observation(
     before: int,
     after: int,
     snippet_chars: int,
+    include_private: bool = False,
 ) -> Dict[str, object]:
     obs = conn.execute(
         """
-        SELECT id, session_id, project, observation_type, title, body, source_event_ids_json, created_at
+        SELECT id, session_id, project, observation_type, title, body, source_event_ids_json, created_at, metadata_json
         FROM observations WHERE id = ?
         """,
         (obs_id,),
     ).fetchone()
     if not obs:
         raise ValueError(f"observation not found: O{obs_id}")
+    obs_meta = json.loads(obs["metadata_json"]) if obs["metadata_json"] else {}
+    obs_visibility = str(((obs_meta.get("privacy") or {}).get("visibility", "public"))).lower()
+    if obs_visibility == "private" and not include_private:
+        raise ValueError(f"observation is private: O{obs_id}")
     source_ids = json.loads(obs["source_event_ids_json"]) if obs["source_event_ids_json"] else []
     timeline = {
         "anchor": {
@@ -758,13 +996,20 @@ def timeline_for_observation(
             before=before,
             after=after,
             snippet_chars=snippet_chars,
+            include_private=include_private,
         )
         timeline["before"] = linked["before"]
         timeline["after"] = linked["after"]
     return timeline
 
 
-def get_item_detail(conn: sqlite3.Connection, item_type: str, item_id: int, snippet_chars: int) -> Dict[str, object]:
+def get_item_detail(
+    conn: sqlite3.Connection,
+    item_type: str,
+    item_id: int,
+    snippet_chars: int,
+    include_private: bool = False,
+) -> Dict[str, object]:
     if item_type == "event":
         row = conn.execute(
             """
@@ -776,6 +1021,10 @@ def get_item_detail(conn: sqlite3.Connection, item_type: str, item_id: int, snip
         ).fetchone()
         if not row:
             raise ValueError(f"event not found: E{item_id}")
+        metadata = json.loads(row["metadata_json"]) if row["metadata_json"] else {}
+        visibility = str(((metadata.get("privacy") or {}).get("visibility", "public"))).lower()
+        if visibility == "private" and not include_private:
+            raise ValueError(f"event is private: E{item_id}")
         content = str(row["content"])
         return {
             "id": f"E{int(row['id'])}",
@@ -790,7 +1039,7 @@ def get_item_detail(conn: sqlite3.Connection, item_type: str, item_id: int, snip
             "tool_name": row["tool_name"],
             "file_path": row["file_path"],
             "tags": json.loads(row["tags_json"]) if row["tags_json"] else [],
-            "metadata": json.loads(row["metadata_json"]) if row["metadata_json"] else {},
+            "metadata": metadata,
             "created_at": str(row["created_at"]),
             "token_estimate": estimate_tokens(content),
         }
@@ -805,6 +1054,10 @@ def get_item_detail(conn: sqlite3.Connection, item_type: str, item_id: int, snip
     ).fetchone()
     if not row:
         raise ValueError(f"observation not found: O{item_id}")
+    metadata = json.loads(row["metadata_json"]) if row["metadata_json"] else {}
+    visibility = str(((metadata.get("privacy") or {}).get("visibility", "public"))).lower()
+    if visibility == "private" and not include_private:
+        raise ValueError(f"observation is private: O{item_id}")
     body = str(row["body"])
     source_ids = json.loads(row["source_event_ids_json"]) if row["source_event_ids_json"] else []
     return {
@@ -817,7 +1070,7 @@ def get_item_detail(conn: sqlite3.Connection, item_type: str, item_id: int, snip
         "content": body,
         "snippet": trim_snippet(body, snippet_chars),
         "source_event_ids": [f"E{int(v)}" for v in source_ids],
-        "metadata": json.loads(row["metadata_json"]) if row["metadata_json"] else {},
+        "metadata": metadata,
         "created_at": str(row["created_at"]),
         "token_estimate": estimate_tokens(body),
     }
@@ -826,7 +1079,7 @@ def get_item_detail(conn: sqlite3.Connection, item_type: str, item_id: int, snip
 def summarize_session(conn: sqlite3.Connection, session_id: str) -> Dict[str, object]:
     rows = conn.execute(
         """
-        SELECT id, event_kind, role, title, content, tool_name, created_at
+        SELECT id, event_kind, role, title, content, tool_name, created_at, metadata_json
         FROM events
         WHERE session_id = ?
         ORDER BY created_at ASC, id ASC
@@ -845,9 +1098,17 @@ def summarize_session(conn: sqlite3.Connection, session_id: str) -> Dict[str, ob
     learnings: List[str] = []
     completed: List[str] = []
     next_steps: List[str] = []
-    source_ids = [int(row["id"]) for row in rows]
-
+    visible_rows = []
     for row in rows:
+        metadata = json.loads(row["metadata_json"]) if row["metadata_json"] else {}
+        visibility = str(((metadata.get("privacy") or {}).get("visibility", "public"))).lower()
+        if visibility == "private":
+            continue
+        visible_rows.append(row)
+
+    source_ids = [int(row["id"]) for row in visible_rows]
+
+    for row in visible_rows:
         title = str(row["title"] or "").strip()
         content = str(row["content"] or "").strip()
         kind = str(row["event_kind"])
@@ -865,14 +1126,16 @@ def summarize_session(conn: sqlite3.Connection, session_id: str) -> Dict[str, ob
         if any(k in joined for k in ("todo", "next", "follow-up", "下一步", "待办")):
             next_steps.append(title or trim_snippet(content, 120))
 
-    if not investigation and rows:
-        investigation = [str(row["title"]) for row in rows if str(row["title"]).strip()][:5]
+    if not investigation and visible_rows:
+        investigation = [str(row["title"]) for row in visible_rows if str(row["title"]).strip()][:5]
     if not learnings:
-        learnings = [trim_snippet(str(row["content"]), 120) for row in rows if str(row["content"]).strip()][:3]
+        learnings = [
+            trim_snippet(str(row["content"]), 120) for row in visible_rows if str(row["content"]).strip()
+        ][:3]
     if not completed:
         completed = [item for item in investigation[:3]]
     if not next_steps:
-        next_steps = ["继续下一轮任务并先验证回归风险。"]
+        next_steps = ["Continue with the next task and validate regression risks first."]
 
     def uniq(seq: Iterable[str], cap: int) -> List[str]:
         out: List[str] = []
@@ -897,7 +1160,7 @@ def summarize_session(conn: sqlite3.Connection, session_id: str) -> Dict[str, ob
         "learnings": uniq(learnings, 8),
         "completed_work": uniq(completed, 8),
         "next_steps": uniq(next_steps, 8),
-        "event_count": len(rows),
+        "event_count": len(visible_rows),
     }
 
     conn.execute(
@@ -1064,19 +1327,22 @@ def cmd_post_tool_use(args: argparse.Namespace) -> int:
     root = pathlib.Path(args.root).resolve()
     conn = open_db(root, args.index_dir)
     ensure_session(conn, args.session_id, args.project)
-    tags = ["tool", args.tool_name.strip().lower()]
+    runtime_cfg = get_runtime_config(conn)
+    semantic_tags = ["tool", args.tool_name.strip().lower()]
     if args.tag:
-        tags.extend(args.tag)
-    tags_clean = [t.strip().lower() for t in tags if t and t.strip()]
-    if any(tag in BLOCKED_MEMORY_TAGS for tag in tags_clean):
+        semantic_tags.extend(args.tag)
+    semantic_tags_clean = [t.strip().lower() for t in semantic_tags if t and t.strip()]
+
+    privacy_tags = [t.strip().lower() for t in (args.privacy_tag or []) if t and t.strip()]
+    if any(tag in PRIVACY_BLOCK_TAGS for tag in privacy_tags):
         print(
             json.dumps(
                 {
                     "ok": True,
                     "hook": "PostToolUse",
                     "skipped": True,
-                    "reason": "blocked_by_tag",
-                    "blocked_tags": [t for t in tags_clean if t in BLOCKED_MEMORY_TAGS],
+                    "reason": "blocked_by_privacy_tag",
+                    "blocked_tags": [t for t in privacy_tags if t in PRIVACY_BLOCK_TAGS],
                 },
                 ensure_ascii=False,
             )
@@ -1085,10 +1351,31 @@ def cmd_post_tool_use(args: argparse.Namespace) -> int:
 
     content = args.content
     compact_meta: Dict[str, int] = {"raw_chars": len(content), "final_chars": len(content), "compacted": 0}
-    if args.compact:
-        content, compact_meta = compact_tool_output(content, args.compact_chars)
+    auto_compact = bool(runtime_cfg.get("channel") == "beta" and runtime_cfg.get("beta_endless_mode"))
+    compact_enabled = bool(args.compact or auto_compact)
+    compact_chars = args.compact_chars if args.compact else min(args.compact_chars, 2000)
+    if compact_enabled:
+        content, compact_meta = compact_tool_output(content, compact_chars)
 
-    meta: Dict[str, object] = {"hook": "PostToolUse", "exit_code": args.exit_code, "compaction": compact_meta}
+    redacted = False
+    if any(tag in PRIVACY_REDACT_TAGS for tag in privacy_tags):
+        content = redact_sensitive_text(content)
+        redacted = True
+
+    visibility = "private" if any(tag in PRIVACY_PRIVATE_TAGS for tag in privacy_tags) else "public"
+    privacy_meta = {
+        "tags": privacy_tags,
+        "visibility": visibility,
+        "redacted": redacted,
+    }
+
+    meta: Dict[str, object] = {
+        "hook": "PostToolUse",
+        "exit_code": args.exit_code,
+        "compaction": compact_meta,
+        "auto_compaction": bool(auto_compact and not args.compact),
+        "privacy": privacy_meta,
+    }
     event_id = insert_event(
         conn,
         session_id=args.session_id,
@@ -1099,11 +1386,18 @@ def cmd_post_tool_use(args: argparse.Namespace) -> int:
         content=content,
         tool_name=args.tool_name,
         file_path=args.file_path,
-        tags=tags_clean,
+        tags=semantic_tags_clean,
         metadata=meta,
     )
     conn.commit()
-    payload = {"ok": True, "event_id": f"E{event_id}", "hook": "PostToolUse", "compaction": compact_meta}
+    payload = {
+        "ok": True,
+        "event_id": f"E{event_id}",
+        "hook": "PostToolUse",
+        "compaction": compact_meta,
+        "auto_compaction": bool(auto_compact and not args.compact),
+        "privacy": privacy_meta,
+    }
     print(json.dumps(payload, ensure_ascii=False))
     return 0
 
@@ -1196,16 +1490,52 @@ def cmd_summarize_session(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_config_get(args: argparse.Namespace) -> int:
+    root = pathlib.Path(args.root).resolve()
+    conn = open_db(root, args.index_dir)
+    payload = {
+        "ok": True,
+        "config": get_runtime_config(conn),
+    }
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_config_set(args: argparse.Namespace) -> int:
+    root = pathlib.Path(args.root).resolve()
+    conn = open_db(root, args.index_dir)
+    beta_endless_mode: bool | None = None
+    if args.beta_endless_mode is not None:
+        beta_endless_mode = args.beta_endless_mode == "on"
+    updated = set_runtime_config(
+        conn,
+        channel=args.channel,
+        viewer_refresh_sec=args.viewer_refresh_sec,
+        beta_endless_mode=beta_endless_mode,
+    )
+    print(json.dumps({"ok": True, "config": updated}, ensure_ascii=False, indent=2))
+    return 0
+
+
 def cmd_search(args: argparse.Namespace) -> int:
     root = pathlib.Path(args.root).resolve()
     conn = open_db(root, args.index_dir)
     meta = fetch_meta(conn)
     vector_dim = int(meta.get("vector_dim", str(DEFAULT_VECTOR_DIM)))
+    since = args.since
+    until = args.until
+    if since:
+        since = parse_iso_datetime(since).isoformat()
+    if until:
+        until = parse_iso_datetime(until).isoformat()
     results = blended_search(
         conn,
         query=args.query,
         project=args.project,
         session_id=args.session_id,
+        since=since,
+        until=until,
+        include_private=bool(args.include_private),
         limit=args.limit,
         vector_dim=vector_dim,
         alpha=args.alpha,
@@ -1213,6 +1543,81 @@ def cmd_search(args: argparse.Namespace) -> int:
     payload = {
         "query": args.query,
         "stage": "search",
+        "filters": {
+            "project": args.project,
+            "session_id": args.session_id,
+            "since": since,
+            "until": until,
+            "include_private": bool(args.include_private),
+        },
+        "results": [
+            {
+                "id": item.item_id,
+                "item_type": item.item_type,
+                "project": item.project,
+                "session_id": item.session_id,
+                "kind": item.kind,
+                "title": item.title,
+                "created_at": item.created_at,
+                "score": round(item.score, 4),
+                "lexical": round(item.lexical, 4),
+                "semantic": round(item.semantic, 4),
+                "token_estimate": item.token_estimate,
+            }
+            for item in results
+        ],
+        "token_estimate_total": sum(item.token_estimate for item in results),
+    }
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    return 0
+
+
+def cmd_nl_search(args: argparse.Namespace) -> int:
+    root = pathlib.Path(args.root).resolve()
+    conn = open_db(root, args.index_dir)
+    meta = fetch_meta(conn)
+    vector_dim = int(meta.get("vector_dim", str(DEFAULT_VECTOR_DIM)))
+
+    parsed = parse_natural_query(args.query)
+    since = parsed["since"]
+    until = parsed["until"]
+    if args.since:
+        since = parse_iso_datetime(args.since).isoformat()
+    if args.until:
+        until = parse_iso_datetime(args.until).isoformat()
+
+    raw_results = blended_search(
+        conn,
+        query=str(parsed["normalized_query"]),
+        project=args.project,
+        session_id=args.session_id,
+        since=since,
+        until=until,
+        include_private=bool(args.include_private),
+        limit=max(10, args.limit * 2),
+        vector_dim=vector_dim,
+        alpha=args.alpha,
+    )
+    filtered = filter_results_by_intent(
+        conn,
+        raw_results,
+        intent_keywords=parsed["intent_keywords"],
+        snippet_chars=args.snippet_chars,
+        include_private=bool(args.include_private),
+    )
+    results = filtered[: args.limit] if filtered else raw_results[: args.limit]
+
+    payload = {
+        "query": args.query,
+        "stage": "nl-search",
+        "interpreted": parsed,
+        "filters": {
+            "project": args.project,
+            "session_id": args.session_id,
+            "since": since,
+            "until": until,
+            "include_private": bool(args.include_private),
+        },
         "results": [
             {
                 "id": item.item_id,
@@ -1239,22 +1644,28 @@ def cmd_timeline(args: argparse.Namespace) -> int:
     root = pathlib.Path(args.root).resolve()
     conn = open_db(root, args.index_dir)
     item_type, item_id = parse_item_id(args.id)
-    if item_type == "event":
-        payload = timeline_for_event(
-            conn,
-            event_id=item_id,
-            before=args.before,
-            after=args.after,
-            snippet_chars=args.snippet_chars,
-        )
-    else:
-        payload = timeline_for_observation(
-            conn,
-            obs_id=item_id,
-            before=args.before,
-            after=args.after,
-            snippet_chars=args.snippet_chars,
-        )
+    try:
+        if item_type == "event":
+            payload = timeline_for_event(
+                conn,
+                event_id=item_id,
+                before=args.before,
+                after=args.after,
+                snippet_chars=args.snippet_chars,
+                include_private=bool(args.include_private),
+            )
+        else:
+            payload = timeline_for_observation(
+                conn,
+                obs_id=item_id,
+                before=args.before,
+                after=args.after,
+                snippet_chars=args.snippet_chars,
+                include_private=bool(args.include_private),
+            )
+    except ValueError as exc:
+        print(json.dumps({"stage": "timeline", "error": str(exc), "id": args.id}, ensure_ascii=False, indent=2))
+        return 1
     payload["stage"] = "timeline"
     print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0
@@ -1264,9 +1675,20 @@ def cmd_get_observations(args: argparse.Namespace) -> int:
     root = pathlib.Path(args.root).resolve()
     conn = open_db(root, args.index_dir)
     details: List[Dict[str, object]] = []
+    skipped_ids: List[str] = []
     for token in args.ids:
         item_type, item_id = parse_item_id(token)
-        detail = get_item_detail(conn, item_type, item_id, args.snippet_chars)
+        try:
+            detail = get_item_detail(
+                conn,
+                item_type,
+                item_id,
+                args.snippet_chars,
+                include_private=bool(args.include_private),
+            )
+        except ValueError:
+            skipped_ids.append(token)
+            continue
         if args.compact:
             detail["content"] = detail["snippet"]
             detail["token_estimate"] = estimate_tokens(str(detail["snippet"]))
@@ -1274,6 +1696,7 @@ def cmd_get_observations(args: argparse.Namespace) -> int:
     payload = {
         "stage": "get_observations",
         "count": len(details),
+        "skipped_ids": skipped_ids,
         "items": details,
         "token_estimate_total": sum(int(item["token_estimate"]) for item in details),
     }
@@ -1288,8 +1711,8 @@ def build_fused_prompt(
     snippet_chars: int,
 ) -> str:
     lines: List[str] = []
-    lines.append("System: 你是 Codex 代码助手。优先依据提供的 Memory + Repo 上下文回答。")
-    lines.append("若证据不足，明确说明缺失信息。")
+    lines.append("System: You are a Codex coding assistant. Prioritize the provided Memory + Repo contexts.")
+    lines.append("If evidence is insufficient, explicitly state what is missing.")
     lines.append("")
     lines.append(f"Question: {question}")
     lines.append("")
@@ -1325,6 +1748,9 @@ def cmd_ask(args: argparse.Namespace) -> int:
         query=args.question,
         project=args.project,
         session_id=args.session_id,
+        since=None,
+        until=None,
+        include_private=bool(args.include_private),
         limit=args.search_limit,
         vector_dim=vector_dim,
         alpha=args.alpha,
@@ -1333,7 +1759,18 @@ def cmd_ask(args: argparse.Namespace) -> int:
     details = []
     for ident in selected_ids:
         typ, iid = parse_item_id(ident)
-        details.append(get_item_detail(conn, typ, iid, args.snippet_chars))
+        try:
+            details.append(
+                get_item_detail(
+                    conn,
+                    typ,
+                    iid,
+                    args.snippet_chars,
+                    include_private=bool(args.include_private),
+                )
+            )
+        except ValueError:
+            continue
 
     repo_payload = run_repo_query(
         root,
@@ -1356,6 +1793,11 @@ def cmd_ask(args: argparse.Namespace) -> int:
     payload = {
         "question": args.question,
         "stage": "fused_ask",
+        "filters": {
+            "project": args.project,
+            "session_id": args.session_id,
+            "include_private": bool(args.include_private),
+        },
         "layer1_search": [
             {
                 "id": item.item_id,
@@ -1425,6 +1867,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_tool.add_argument("--file-path", default=None)
     p_tool.add_argument("--exit-code", type=int, default=0)
     p_tool.add_argument("--tag", action="append", default=[])
+    p_tool.add_argument(
+        "--privacy-tag",
+        action="append",
+        default=[],
+        help="Privacy policy tag(s): private/sensitive/secret/redact/block/no_mem/...",
+    )
     p_tool.add_argument("--compact", action="store_true", help="Compact large tool output before storing.")
     p_tool.add_argument(
         "--compact-chars",
@@ -1466,24 +1914,68 @@ def build_parser() -> argparse.ArgumentParser:
     p_sum.add_argument("session_id")
     p_sum.set_defaults(func=cmd_summarize_session)
 
+    p_cfg_get = sub.add_parser("config-get", help="Get runtime configuration (stable/beta, viewer settings).")
+    p_cfg_get.set_defaults(func=cmd_config_get)
+
+    p_cfg_set = sub.add_parser("config-set", help="Set runtime configuration.")
+    p_cfg_set.add_argument("--channel", choices=sorted(CHANNEL_CHOICES), default=None)
+    p_cfg_set.add_argument("--viewer-refresh-sec", type=int, default=None)
+    p_cfg_set.add_argument(
+        "--beta-endless-mode",
+        choices=["on", "off"],
+        default=None,
+        help="Enable/disable beta endless compaction mode.",
+    )
+    p_cfg_set.set_defaults(func=cmd_config_set)
+
     p_search = sub.add_parser("search", help="Stage 1 retrieval: compact index hits.")
     add_project_arg(p_search)
     p_search.add_argument("query")
     p_search.add_argument("--session-id", default=None)
+    p_search.add_argument("--since", default=None, help="ISO time lower bound, e.g. 2026-02-01T00:00:00+00:00")
+    p_search.add_argument("--until", default=None, help="ISO time upper bound")
+    p_search.add_argument("--include-private", action="store_true")
     p_search.add_argument("--limit", type=int, default=20)
     p_search.add_argument("--alpha", type=float, default=0.7, help="Lexical/semantic blend.")
     p_search.set_defaults(func=cmd_search)
+
+    p_nl_search = sub.add_parser("nl-search", help="Natural-language project history search.")
+    add_project_arg(p_nl_search)
+    p_nl_search.add_argument("query")
+    p_nl_search.add_argument("--session-id", default=None)
+    p_nl_search.add_argument("--since", default=None, help="Override parsed lower bound (ISO time).")
+    p_nl_search.add_argument("--until", default=None, help="Override parsed upper bound (ISO time).")
+    p_nl_search.add_argument("--include-private", action="store_true")
+    p_nl_search.add_argument("--limit", type=int, default=20)
+    p_nl_search.add_argument("--alpha", type=float, default=0.7, help="Lexical/semantic blend.")
+    p_nl_search.add_argument("--snippet-chars", type=int, default=DEFAULT_SNIPPET_CHARS)
+    p_nl_search.set_defaults(func=cmd_nl_search)
+
+    # Alias for user-facing wording from mem-search skill.
+    p_mem_search = sub.add_parser("mem-search", help="Alias of nl-search.")
+    add_project_arg(p_mem_search)
+    p_mem_search.add_argument("query")
+    p_mem_search.add_argument("--session-id", default=None)
+    p_mem_search.add_argument("--since", default=None)
+    p_mem_search.add_argument("--until", default=None)
+    p_mem_search.add_argument("--include-private", action="store_true")
+    p_mem_search.add_argument("--limit", type=int, default=20)
+    p_mem_search.add_argument("--alpha", type=float, default=0.7)
+    p_mem_search.add_argument("--snippet-chars", type=int, default=DEFAULT_SNIPPET_CHARS)
+    p_mem_search.set_defaults(func=cmd_nl_search)
 
     p_timeline = sub.add_parser("timeline", help="Stage 2 retrieval: temporal neighborhood.")
     p_timeline.add_argument("id", help="E<ID> or O<ID>")
     p_timeline.add_argument("--before", type=int, default=5)
     p_timeline.add_argument("--after", type=int, default=5)
+    p_timeline.add_argument("--include-private", action="store_true")
     p_timeline.add_argument("--snippet-chars", type=int, default=DEFAULT_SNIPPET_CHARS)
     p_timeline.set_defaults(func=cmd_timeline)
 
     p_get = sub.add_parser("get-observations", help="Stage 3 retrieval: full details by IDs.")
     p_get.add_argument("ids", nargs="+", help="List of E<ID>/O<ID>")
     p_get.add_argument("--compact", action="store_true")
+    p_get.add_argument("--include-private", action="store_true")
     p_get.add_argument("--snippet-chars", type=int, default=DEFAULT_SNIPPET_CHARS)
     p_get.set_defaults(func=cmd_get_observations)
 
@@ -1497,6 +1989,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_ask.add_argument("--code-module-limit", type=int, default=6)
     p_ask.add_argument("--repo-index-dir", default=".codex_knowledge")
     p_ask.add_argument("--alpha", type=float, default=0.7)
+    p_ask.add_argument("--include-private", action="store_true")
     p_ask.add_argument("--snippet-chars", type=int, default=DEFAULT_SNIPPET_CHARS)
     p_ask.add_argument("--prompt-only", action="store_true")
     p_ask.set_defaults(func=cmd_ask)

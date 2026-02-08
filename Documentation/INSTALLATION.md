@@ -6,22 +6,29 @@
 - SQLite with FTS5 support
 - Optional: Codex CLI for MCP registration
 
-## Install
-
-No package manager is required for the current version.
+## Clone
 
 ```bash
 git clone https://github.com/StartripAI/codex-mem.git
 cd codex-mem
 ```
 
-Initialize memory store:
+## Initialize Local Memory Store
 
 ```bash
 bash Scripts/codex_mem.sh init --project demo
 ```
 
-## Optional: register MCP in Codex
+## Optional: Start Local Web Viewer
+
+```bash
+bash Scripts/codex_mem.sh web --project-default demo --host 127.0.0.1 --port 37777
+```
+
+Open:
+- `http://127.0.0.1:37777/`
+
+## Optional: Register MCP in Codex
 
 ```bash
 codex mcp add codex-mem -- python3 /ABS/PATH/codex-mem/Scripts/codex_mem_mcp.py --root /ABS/PATH/codex-mem --project-default demo
@@ -32,3 +39,9 @@ codex mcp add codex-mem -- python3 /ABS/PATH/codex-mem/Scripts/codex_mem_mcp.py 
 ```bash
 python3 Scripts/codex_mem_smoketest.py --root .
 ```
+
+Expected output includes:
+- `"ok": true`
+- non-zero search results
+- verified MCP tools
+- verified web endpoints

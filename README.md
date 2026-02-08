@@ -1,300 +1,297 @@
 # codex-mem
 
-Persistent memory + progressive retrieval system built for **Codex**.
+Persistent memory, progressive retrieval, and Codex-native workflow tooling.
 
-`codex-mem` gives Codex long-term, local-first memory across sessions and combines that memory with repository retrieval so follow-up answers are faster, cheaper, and more accurate.
+`codex-mem` is a local-first memory layer for Codex that keeps cross-session context usable without stuffing entire history into every prompt.
 
-## Why this exists
+It is inspired by the same pain point that made Claude-Mem popular, but implemented for the Codex toolchain (CLI, MCP, Skills, and local automation).
 
-Most coding sessions fail at continuity:
-- New chat starts with no operational memory.
-- The same architecture context gets repeated.
-- Expensive context stuffing burns tokens.
+## North Star
 
-`codex-mem` solves this with:
-1. **Lifecycle capture** (what happened during work)
-2. **Progressive retrieval** (retrieve only what is needed)
-3. **Memory + code fusion** (memory history + real repo evidence)
+Make every new Codex session feel like a continuation of real engineering work:
+- keep durable memory of decisions, tool outputs, and outcomes
+- retrieve only what is relevant (progressive disclosure)
+- fuse memory with repository evidence for accurate follow-up answers
 
-## Feature Matrix
+## What You Get
 
-- **Local-first persistence**: SQLite + FTS5 + lightweight local semantic vectors
-- **5 lifecycle hooks**: `session-start`, `user-prompt-submit`, `post-tool-use`, `stop`, `session-end`
-- **3-layer retrieval**:
-  - Layer 1: `search` (compact index)
-  - Layer 2: `timeline` (temporal context)
-  - Layer 3: `get-observations` (full details)
-- **Codex MCP server**: `Scripts/codex_mem_mcp.py`
-- **Skill package**: `Skills/codex-mem/`
-- **Repo fusion retrieval**: `ask` calls memory + `repo_knowledge`
-- **Tool output compaction**: optional deterministic compaction for heavy logs
-- **Privacy tag blocking**: skip memory writes with `no_mem/private/sensitive/secret`
-- **Smoke test**: CLI + MCP end-to-end simulation
+### Core capabilities
+- Local-first persistence with SQLite + FTS5 + lightweight semantic vectors
+- Five lifecycle hooks:
+  - `session-start`
+  - `user-prompt-submit`
+  - `post-tool-use`
+  - `stop`
+  - `session-end`
+- Three-stage retrieval:
+  - `search` (compact IDs/titles/scores)
+  - `timeline` (temporal neighborhood)
+  - `get-observations` (full details by selected IDs)
+- Fused retrieval via `ask`:
+  - memory context + `repo_knowledge.py` code chunks
 
-## Table of Contents
+### UX features (parity-focused)
+- Built-in natural language memory search:
+  - `nl-search` / `mem-search`
+  - supports queries like: "what bugs were fixed", "last week", "this week", "today"
+- Local Web UI:
+  - real-time memory stream
+  - session summaries
+  - natural-language search
+  - runtime channel switch (`stable` / `beta`)
+- Dual-tag privacy model:
+  - semantic tags (`--tag`) for classification
+  - privacy tags (`--privacy-tag`) for access policy
+- Endless-mode style compaction (beta):
+  - auto-compacts high-volume tool output to reduce stored and retrieved token load
 
-- [Quick Start](#quick-start)
-- [How It Works](#how-it-works)
-- [Architecture](#architecture)
-- [CLI Commands](#cli-commands)
-- [MCP Tools](#mcp-tools)
-- [Skill Integration](#skill-integration)
-- [Token Strategy](#token-strategy)
-- [Privacy and Data Model](#privacy-and-data-model)
-- [Validation](#validation)
-- [Roadmap](#roadmap)
-- [Documentation](#documentation)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-- [License](#license)
+### Codex integration
+- MCP server (`Scripts/codex_mem_mcp.py`) with `mem_*` tools
+- Skill package (`Skills/codex-mem/`) for reproducible retrieval workflow
+- Shell wrapper (`Scripts/codex_mem.sh`) for short operational commands
+
+## Repository Layout
+
+- `Scripts/codex_mem.py`: core memory engine and CLI
+- `Scripts/codex_mem_mcp.py`: MCP server
+- `Scripts/codex_mem_web.py`: local web viewer
+- `Scripts/codex_mem_smoketest.py`: end-to-end simulation test
+- `Scripts/repo_knowledge.py`: repository retrieval used by fused `ask`
+- `Skills/codex-mem/`: skill docs + agent config
+- `Documentation/`: deep docs for install, architecture, MCP tools, and troubleshooting
 
 ## Quick Start
 
-### 1) Initialize local memory
+### 1) Initialize memory store
 
 ```bash
 bash Scripts/codex_mem.sh init --project demo
 ```
 
-### 2) Simulate a session lifecycle
+### 2) Capture a session lifecycle
 
 ```bash
-bash Scripts/codex_mem.sh session-start s1 --project demo --title "Session 1"
-bash Scripts/codex_mem.sh prompt s1 "Read architecture and map data flow" --project demo
-bash Scripts/codex_mem.sh tool s1 shell "rg -n 'HomeStreamOrchestrator'" --project demo --title "Locate orchestrator" --compact
-bash Scripts/codex_mem.sh stop s1 --project demo --content "Checkpoint"
+bash Scripts/codex_mem.sh session-start s1 --project demo --title "Streaming refactor"
+bash Scripts/codex_mem.sh prompt s1 "Map pipeline from entry to persistence" --project demo
+bash Scripts/codex_mem.sh tool s1 shell "rg -n 'HomeStreamOrchestrator'" --project demo --title "Find orchestrator" --compact
+bash Scripts/codex_mem.sh stop s1 --project demo --content "checkpoint"
 bash Scripts/codex_mem.sh session-end s1 --project demo
 ```
 
-### 3) Retrieve memory progressively
+### 3) Retrieve progressively
 
 ```bash
-# Layer 1
+# Layer 1: compact candidates
 bash Scripts/codex_mem.sh search "orchestrator streaming" --project demo --limit 20
 
-# Layer 2
+# Layer 1 (natural language): mem-search
+bash Scripts/codex_mem.sh mem-search "what bugs were fixed today" --project demo --limit 20
+
+# Layer 2: timeline around chosen item
 bash Scripts/codex_mem.sh timeline E12 --before 5 --after 5
 
-# Layer 3
+# Layer 3: full details for chosen IDs
 bash Scripts/codex_mem.sh get E12 O3
 ```
 
-### 4) Fuse memory + repo retrieval
+### 4) Fuse memory with code retrieval
 
 ```bash
-bash Scripts/codex_mem.sh ask "What is the end-to-end streaming update path?" --project demo
+bash Scripts/codex_mem.sh ask "What is the current end-to-end generation path?" --project demo
 ```
 
-## How It Works
+## Web UI (Local Viewer)
 
-### Lifecycle capture
-
-`codex-mem` records events at operational boundaries:
-
-1. **SessionStart**: session opened
-2. **UserPromptSubmit**: user intent captured
-3. **PostToolUse**: command/tool output captured (optionally compacted)
-4. **Stop**: checkpoint marker
-5. **SessionEnd**: close + auto summary + observation generation
-
-### Progressive disclosure retrieval
-
-Instead of stuffing full history into every prompt:
-
-1. **`search`** returns compact candidates (ID/title/type/score)
-2. **`timeline`** returns neighborhood around selected IDs
-3. **`get-observations`** returns full details for final IDs only
-
-### Fused answer context
-
-`ask` merges:
-- Memory context (`search` + `get-observations`)
-- Repository context (`repo_knowledge.py query --json`)
-
-This keeps context windows small while preserving factual grounding.
-
-## Architecture
-
-```mermaid
-flowchart TD
-  A["Lifecycle Hooks"] --> B["codex_mem.py"]
-  B --> C["SQLite: sessions/events/observations"]
-  B --> D["FTS5 index"]
-  B --> E["Local vector embedding"]
-  F["codex_mem_mcp.py"] --> B
-  G["Codex MCP Client"] --> F
-  H["repo_knowledge.py"] --> I["Code chunks + module recall"]
-  B --> J["ask: memory + code fusion"]
-  I --> J
-```
-
-Key implementation files:
-- `Scripts/codex_mem.py`
-- `Scripts/codex_mem_mcp.py`
-- `Scripts/repo_knowledge.py`
-- `Scripts/codex_mem_smoketest.py`
-
-## CLI Commands
-
-### Core
+Start viewer:
 
 ```bash
-bash Scripts/codex_mem.sh init [--project NAME]
-bash Scripts/codex_mem.sh session-start <session_id> [--project NAME] [--title TEXT]
-bash Scripts/codex_mem.sh prompt <session_id> "<user prompt>" [--project NAME]
-bash Scripts/codex_mem.sh tool <session_id> <tool_name> "<tool output>" [--project NAME] [--compact]
-bash Scripts/codex_mem.sh stop <session_id> [--project NAME]
-bash Scripts/codex_mem.sh session-end <session_id> [--project NAME] [--skip-summary]
+bash Scripts/codex_mem.sh web --project-default demo --host 127.0.0.1 --port 37777
 ```
 
-### Retrieval
+Then open:
+- `http://127.0.0.1:37777/`
+
+Viewer provides:
+- real-time memory stream (with visibility badge)
+- session summary panel
+- mem-search query box
+- runtime config controls:
+  - channel: `stable` / `beta`
+  - refresh interval
+  - `beta endless mode` toggle
+
+## Dual-Tag Privacy Model
+
+### Semantic tags
+Use `--tag` for topic/category indexing and retrieval semantics.
+
+Example:
+```bash
+bash Scripts/codex_mem.sh tool s1 shell "Fixed race in parser" --project demo --tag bugfix --tag parser
+```
+
+### Privacy tags
+Use `--privacy-tag` for storage/visibility policy.
+
+Supported policy behavior:
+- block write:
+  - `no_mem`, `block`, `skip`, `secret_block`
+- mark record private:
+  - `private`, `sensitive`, `secret`
+- redact sensitive patterns:
+  - `redact`, `mask`, `sensitive`, `secret`
+
+Example:
+```bash
+bash Scripts/codex_mem.sh tool s1 shell "token=abc123" --project demo --privacy-tag private --privacy-tag redact
+```
+
+By default, retrieval hides private records. Use `--include-private` when needed.
+
+## Runtime Config and Beta Endless Mode
+
+Read config:
+```bash
+bash Scripts/codex_mem.sh config-get
+```
+
+Set config:
+```bash
+bash Scripts/codex_mem.sh config-set --channel beta --viewer-refresh-sec 2 --beta-endless-mode on
+```
+
+Behavior:
+- `stable`: explicit compaction only (`--compact`)
+- `beta` + endless mode `on`: auto-compaction for high-volume tool outputs
+
+## MCP Server
+
+Run server:
 
 ```bash
-bash Scripts/codex_mem.sh search "<query>" [--project NAME] [--session-id SID] [--limit N]
-bash Scripts/codex_mem.sh timeline <E123|O45> [--before N] [--after N]
-bash Scripts/codex_mem.sh get <E123|O45> [more IDs]
-bash Scripts/codex_mem.sh ask "<question>" [--project NAME]
+python3 Scripts/codex_mem_mcp.py --root . --project-default demo
 ```
 
-### MCP mode
-
-```bash
-bash Scripts/codex_mem.sh mcp --project-default demo
-```
-
-## MCP Tools
-
-`codex_mem_mcp.py` exposes the following tools:
-
-| Tool | Purpose |
-|---|---|
-| `mem_search` | Layer-1 compact retrieval |
-| `mem_timeline` | Layer-2 temporal context |
-| `mem_get_observations` | Layer-3 full detail retrieval |
-| `mem_ask` | Memory + repo fused retrieval |
-| `mem_session_start` | Lifecycle start hook |
-| `mem_user_prompt_submit` | Prompt submission hook |
-| `mem_post_tool_use` | Tool output capture hook |
-| `mem_stop` | Stop/checkpoint hook |
-| `mem_session_end` | Session close hook + optional summary |
-| `mem_summarize_session` | Regenerate session summary |
-
-### Register MCP in Codex
+Register in Codex:
 
 ```bash
 codex mcp add codex-mem -- python3 /ABS/PATH/codex-mem/Scripts/codex_mem_mcp.py --root /ABS/PATH/codex-mem --project-default demo
 ```
 
+### Exposed MCP tools
+
+Retrieval:
+- `mem_search`
+- `mem_nl_search`
+- `mem_timeline`
+- `mem_get_observations`
+- `mem_ask`
+
+Runtime config:
+- `mem_config_get`
+- `mem_config_set`
+
+Lifecycle:
+- `mem_session_start`
+- `mem_user_prompt_submit`
+- `mem_post_tool_use`
+- `mem_stop`
+- `mem_session_end`
+- `mem_summarize_session`
+
 ## Skill Integration
 
-Skill package location:
+Skill location:
 - `Skills/codex-mem/SKILL.md`
-- `Skills/codex-mem/agents/openai.yaml`
 
-The skill defines:
-- recommended retrieval sequence
-- MCP connection shape
-- lifecycle hook usage policy
+Recommended skill retrieval sequence:
+1. `mem_search` or `mem_nl_search`
+2. `mem_timeline`
+3. `mem_get_observations`
+4. `mem_ask` for memory+code grounded answers
 
 ## Token Strategy
 
-The system optimizes token usage by design:
+Token savings come from retrieval discipline, not from aggressive truncation alone:
+- Layer 1 IDs/summaries first
+- timeline only around selected IDs
+- full details only for final shortlist
+- compact tool outputs on write path
+- bound code context with `code_top_k` and module limits
 
-1. **Compact first**: IDs/titles before details
-2. **Selective expansion**: timeline around only selected items
-3. **Late full fetch**: full observation only when necessary
-4. **Optional tool compaction**: large command outputs can be compressed before storage
-5. **Repo fusion by top-k**: code snippets are bounded by `code_top_k` and module recall limit
+This design keeps context quality while reducing unnecessary context payload.
 
-## Privacy and Data Model
+## Data Model
 
-### Local data
-
-All memory is local in:
+Storage path:
 - `<repo>/.codex_mem/codex_mem.sqlite3`
 
-### Tables
-
+Tables:
+- `meta`
 - `sessions`
 - `events`
 - `observations`
 - `events_fts`
 - `observations_fts`
 
-### Blocking sensitive writes
+Important metadata fields:
+- runtime config: `channel`, `viewer_refresh_sec`, `beta_endless_mode`
+- privacy metadata per record: visibility, tags, redaction flags
 
-`post-tool-use` skips write when tags include one of:
-- `no_mem`
-- `private`
-- `sensitive`
-- `secret`
+## Simulation / Validation
 
-## Validation
-
-### Smoke test
+Run one command:
 
 ```bash
 python3 Scripts/codex_mem_smoketest.py --root .
 ```
 
-This validates:
-- CLI lifecycle capture
-- Layered retrieval behavior
-- MCP initialization + tools/list + tools/call
-- At least one non-empty retrieval path
+Smoke test validates:
+- lifecycle capture
+- natural-language mem-search
+- privacy blocking + private visibility filtering
+- runtime config set/get
+- web API endpoints
+- MCP tool availability + retrieval calls
 
-### Example smoke output (abridged)
+## Codex Plugin / Extension Path
 
-```json
-{
-  "ok": true,
-  "summary_event_count": 4,
-  "search_result_count": 5,
-  "mcp_tools_verified": [
-    "mem_ask",
-    "mem_get_observations",
-    "mem_search",
-    "mem_timeline"
-  ]
-}
-```
+Current practical integration path for Codex is:
+- MCP server (`codex_mem_mcp.py`)
+- Skills package (`Skills/codex-mem`)
+- GitHub distribution + release notes
+
+If an official extension marketplace flow is available in your Codex environment, keep this repo structured around:
+- deterministic install commands
+- explicit MCP registration snippet
+- compatibility matrix in docs
+- smoke test command for reviewers
 
 ## Roadmap
 
-- Optional web viewer for memory stream and observation inspection
-- Optional external embedding providers for larger semantic recall
-- Incremental indexing modes for very large monorepos
-- Prebuilt install scripts for one-command setup
-- CI package and release automation
+- Incremental compaction policies by tool type
+- Optional external embedding provider adapters
+- Browser-based timeline drilling and detail panes
+- Export/import utilities for memory snapshots
+- Release automation for reproducible installation bundles
 
 ## Documentation
 
-- `Documentation/CODEX_MEM.md` - detailed operational guide
-- `Documentation/INSTALLATION.md` - setup and environment guidance
-- `Documentation/MCP_TOOLS.md` - tool schemas and call patterns
-- `Documentation/ARCHITECTURE.md` - component and data-flow model
-- `Documentation/TROUBLESHOOTING.md` - common failure modes
-- `PUBLISH.md` - GitHub publishing workflow
-
-## Troubleshooting
-
-- **`Repository not found` on push**
-  - Check repo exists and PAT has access to that repo.
-- **MCP stream closes immediately**
-  - Ensure `Scripts/codex_mem.py` exists under `--root`.
-- **No search results**
-  - Verify lifecycle events were written for the same `--project`/`session_id`.
-- **Permission errors in protected directories**
-  - Run in user-writable location and avoid system-protected paths.
+- `Documentation/CODEX_MEM.md`
+- `Documentation/INSTALLATION.md`
+- `Documentation/MCP_TOOLS.md`
+- `Documentation/ARCHITECTURE.md`
+- `Documentation/TROUBLESHOOTING.md`
+- `PUBLISH.md`
 
 ## Contributing
 
-1. Create branch from `codex/init`
-2. Keep changes local-first and testable via smoke test
-3. Add docs for every new CLI/MCP behavior
-4. Include before/after command examples in PR description
+1. Create a feature branch from `codex/init`
+2. Keep changes local-first and deterministic
+3. Update docs with concrete command examples
+4. Run `python3 Scripts/codex_mem_smoketest.py --root .`
+5. Include smoke output summary in PR
 
 ## License
 
-This repository currently has no explicit open-source license file.
-Add one before broad public distribution.
+No explicit open-source license file is included yet. Add one before broad public redistribution.
