@@ -40,6 +40,15 @@ codex mcp add codex-mem -- python3 /ABS/PATH/codex-mem/Scripts/codex_mem_mcp.py 
 python3 Scripts/codex_mem_smoketest.py --root .
 ```
 
+## Optional: Launch Ops Toolkit Commands
+
+```bash
+bash Scripts/codex_mem.sh load-demo-data --reset
+bash Scripts/codex_mem.sh make-gifs
+bash Scripts/codex_mem.sh validate-assets --check-readme --strict
+bash Scripts/codex_mem.sh social-pack --version v0.3.0
+```
+
 Expected output includes:
 - `"ok": true`
 - non-zero search results

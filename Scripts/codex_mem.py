@@ -404,6 +404,33 @@ def redact_sensitive_text(text: str) -> str:
     return out
 
 
+def anonymize_text_for_share(text: str) -> str:
+    out = redact_sensitive_text(text or "")
+    out = re.sub(r"(?i)\b[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}\b", "<EMAIL>", out)
+    out = re.sub(r"(?:[A-Za-z]:\\|/)[^\s\"']+", "/ABS/PATH", out)
+    out = re.sub(r"\b(?:github_pat_[A-Za-z0-9_]+|gh[pousr]_[A-Za-z0-9]+)\b", "<REDACTED_TOKEN>", out)
+    out = re.sub(r"\b(?:sk-[A-Za-z0-9]{10,}|AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|AIza[0-9A-Za-z\-_]{10,})\b", "<REDACTED_TOKEN>", out)
+    out = re.sub(r"\b[a-f0-9]{32,}\b", "<REDACTED_HEX>", out, flags=re.IGNORECASE)
+    return out
+
+
+def scrub_json_for_share(value: object) -> object:
+    if isinstance(value, dict):
+        out: Dict[str, object] = {}
+        for key, val in value.items():
+            lower = str(key).lower()
+            if any(tok in lower for tok in ("token", "secret", "password", "api_key", "apikey", "authorization")):
+                out[str(key)] = "<REDACTED>"
+            else:
+                out[str(key)] = scrub_json_for_share(val)
+        return out
+    if isinstance(value, list):
+        return [scrub_json_for_share(v) for v in value]
+    if isinstance(value, str):
+        return anonymize_text_for_share(value)
+    return value
+
+
 def ensure_session(
     conn: sqlite3.Connection,
     session_id: str,
@@ -1828,6 +1855,177 @@ def cmd_ask(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_export_session(args: argparse.Namespace) -> int:
+    root = pathlib.Path(args.root).resolve()
+    conn = open_db(root, args.index_dir)
+    session_id = str(args.session_id).strip()
+    if not session_id:
+        raise ValueError("session_id is required")
+
+    session = conn.execute(
+        """
+        SELECT session_id, project, title, started_at, ended_at, status, summary_json, metadata_json
+        FROM sessions
+        WHERE session_id = ?
+        """,
+        (session_id,),
+    ).fetchone()
+    if not session:
+        print(json.dumps({"ok": False, "error": f"session not found: {session_id}"}, ensure_ascii=False, indent=2))
+        return 1
+
+    anonymize = str(args.anonymize).lower() != "off"
+    include_private = bool(args.include_private)
+    max_events = max(1, int(args.max_events))
+    max_observations = max(1, int(args.max_observations))
+
+    event_private_clause = ""
+    obs_private_clause = ""
+    if not include_private:
+        event_private_clause = " AND COALESCE(json_extract(metadata_json, '$.privacy.visibility'), 'public') != 'private'"
+        obs_private_clause = " AND COALESCE(json_extract(metadata_json, '$.privacy.visibility'), 'public') != 'private'"
+
+    events = conn.execute(
+        """
+        SELECT id, event_kind, role, title, content, tool_name, file_path, tags_json, metadata_json, created_at
+        FROM events
+        WHERE session_id = ?""" + event_private_clause + """
+        ORDER BY created_at ASC, id ASC
+        LIMIT ?
+        """,
+        (session_id, max_events),
+    ).fetchall()
+
+    observations = conn.execute(
+        """
+        SELECT id, observation_type, title, body, source_event_ids_json, metadata_json, created_at
+        FROM observations
+        WHERE session_id = ?""" + obs_private_clause + """
+        ORDER BY created_at ASC, id ASC
+        LIMIT ?
+        """,
+        (session_id, max_observations),
+    ).fetchall()
+
+    session_alias = session_id
+    if anonymize:
+        session_alias = f"session-{hashlib.sha1(session_id.encode('utf-8')).hexdigest()[:10]}"
+
+    event_id_map: Dict[int, int] = {}
+    events_out: List[Dict[str, object]] = []
+    for i, row in enumerate(events, start=1):
+        original_id = int(row["id"])
+        event_id_map[original_id] = i
+        tags = json.loads(row["tags_json"]) if row["tags_json"] else []
+        metadata = json.loads(row["metadata_json"]) if row["metadata_json"] else {}
+        title = str(row["title"] or "")
+        content = str(row["content"] or "")
+        file_path = str(row["file_path"] or "") if row["file_path"] else None
+        if anonymize:
+            title = anonymize_text_for_share(title)
+            content = anonymize_text_for_share(content)
+            if file_path:
+                file_path = "/ABS/PATH"
+            metadata = scrub_json_for_share(metadata)  # type: ignore[assignment]
+        events_out.append(
+            {
+                "export_event_id": i,
+                "event_kind": str(row["event_kind"]),
+                "role": str(row["role"]),
+                "title": title,
+                "content": content,
+                "tool_name": row["tool_name"],
+                "file_path": file_path,
+                "tags": tags,
+                "metadata": metadata,
+                "created_at": str(row["created_at"]),
+            }
+        )
+
+    observations_out: List[Dict[str, object]] = []
+    for j, row in enumerate(observations, start=1):
+        source_ids_raw = json.loads(row["source_event_ids_json"]) if row["source_event_ids_json"] else []
+        source_ids = []
+        for source_id in source_ids_raw:
+            sid = int(source_id)
+            if sid in event_id_map:
+                source_ids.append(event_id_map[sid])
+        metadata = json.loads(row["metadata_json"]) if row["metadata_json"] else {}
+        title = str(row["title"] or "")
+        body = str(row["body"] or "")
+        if anonymize:
+            title = anonymize_text_for_share(title)
+            body = anonymize_text_for_share(body)
+            metadata = scrub_json_for_share(metadata)  # type: ignore[assignment]
+        observations_out.append(
+            {
+                "export_observation_id": j,
+                "observation_type": str(row["observation_type"]),
+                "title": title,
+                "body": body,
+                "source_export_event_ids": source_ids,
+                "metadata": metadata,
+                "created_at": str(row["created_at"]),
+            }
+        )
+
+    session_summary = json.loads(session["summary_json"]) if session["summary_json"] else {}
+    session_metadata = json.loads(session["metadata_json"]) if session["metadata_json"] else {}
+    title = str(session["title"] or "")
+    if anonymize:
+        title = anonymize_text_for_share(title)
+        session_summary = scrub_json_for_share(session_summary)  # type: ignore[assignment]
+        if isinstance(session_summary, dict):
+            session_summary["session_id"] = session_alias
+        session_metadata = scrub_json_for_share(session_metadata)  # type: ignore[assignment]
+
+    payload = {
+        "ok": True,
+        "schema": "codex-mem-session-export-v1",
+        "exported_at": now_iso(),
+        "anonymized": anonymize,
+        "include_private": include_private,
+        "session": {
+            "session_id": session_alias,
+            "project": str(session["project"]),
+            "title": title,
+            "started_at": str(session["started_at"]),
+            "ended_at": str(session["ended_at"]) if session["ended_at"] else None,
+            "status": str(session["status"]),
+            "summary": session_summary,
+            "metadata": session_metadata,
+        },
+        "events": events_out,
+        "observations": observations_out,
+        "stats": {
+            "event_count": len(events_out),
+            "observation_count": len(observations_out),
+        },
+    }
+
+    output_text = json.dumps(payload, ensure_ascii=False, indent=max(0, int(args.indent)))
+    if args.output and args.output != "-":
+        out_path = pathlib.Path(args.output).resolve()
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(output_text + "\n", encoding="utf-8")
+        print(
+            json.dumps(
+                {
+                    "ok": True,
+                    "stage": "export-session",
+                    "output": str(out_path),
+                    "stats": payload["stats"],
+                    "anonymized": anonymize,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return 0
+    print(output_text)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Codex local memory with progressive disclosure retrieval."
@@ -1913,6 +2111,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_sum = sub.add_parser("summarize-session", help="Generate structured session summary.")
     p_sum.add_argument("session_id")
     p_sum.set_defaults(func=cmd_summarize_session)
+
+    p_export = sub.add_parser(
+        "export-session",
+        help="Export one session as a shareable JSON package (supports anonymization).",
+    )
+    p_export.add_argument("session_id")
+    p_export.add_argument("--include-private", action="store_true")
+    p_export.add_argument("--anonymize", choices=["on", "off"], default="on")
+    p_export.add_argument("--max-events", type=int, default=1000)
+    p_export.add_argument("--max-observations", type=int, default=500)
+    p_export.add_argument("--output", default="-", help="Output path or '-' for stdout.")
+    p_export.add_argument("--indent", type=int, default=2)
+    p_export.set_defaults(func=cmd_export_session)
 
     p_cfg_get = sub.add_parser("config-get", help="Get runtime configuration (stable/beta, viewer settings).")
     p_cfg_get.set_defaults(func=cmd_config_get)

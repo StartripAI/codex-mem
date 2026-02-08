@@ -68,6 +68,19 @@ Input:
 - `snippet_chars` (optional)
 - `prompt_only` (optional bool)
 
+### `mem_export_session`
+
+Purpose:
+- export one session as shareable JSON, anonymized by default.
+
+Input:
+- `session_id` (required)
+- `include_private` (optional bool)
+- `anonymize` (optional bool, default true)
+- `max_events`, `max_observations` (optional)
+- `output_path` (optional)
+- `indent` (optional)
+
 ## Runtime Config Tools
 
 ### `mem_config_get`
@@ -116,6 +129,10 @@ Input:
 
 ### `mem_summarize_session`
 - `session_id` required
+
+### `mem_export_session`
+- `session_id` required
+- optional: `include_private`, `anonymize`, `max_events`, `max_observations`, `output_path`, `indent`
 
 ## Error Model
 

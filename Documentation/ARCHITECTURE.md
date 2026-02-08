@@ -36,6 +36,7 @@
 1. Lifecycle command writes event into SQLite.
 2. Event text is indexed in FTS and vectorized locally.
 3. `session-end` compiles session summary observations.
+4. `export-session` emits anonymized shareable JSON packages.
 4. Retrieval path:
    - Layer 1 (`search` or `nl-search`)
    - Layer 2 (`timeline`)
@@ -97,6 +98,6 @@ Default retrieval excludes private records unless explicitly requested.
 ## MCP Surface
 
 Tool categories:
-- retrieval: `mem_search`, `mem_nl_search`, `mem_timeline`, `mem_get_observations`, `mem_ask`
+- retrieval: `mem_search`, `mem_nl_search`, `mem_timeline`, `mem_get_observations`, `mem_ask`, `mem_export_session`
 - runtime config: `mem_config_get`, `mem_config_set`
 - lifecycle: session and tool hook operations

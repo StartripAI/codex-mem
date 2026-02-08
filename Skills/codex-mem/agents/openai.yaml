@@ -20,6 +20,7 @@ tools:
   - mem_timeline
   - mem_get_observations
   - mem_ask
+  - mem_export_session
   - mem_config_get
   - mem_config_set
   - mem_session_start

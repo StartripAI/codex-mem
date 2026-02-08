@@ -1,0 +1,31 @@
+{
+  "project": "demo-recording",
+  "session_id": "demo-session-001",
+  "title": "Demo Session for Launch Recording",
+  "prompts": [
+    "Map the generation pipeline from prompt to persisted output.",
+    "What bugs were fixed in streaming orchestration this week?"
+  ],
+  "tools": [
+    {
+      "tool_name": "shell",
+      "title": "Locate orchestrator actor",
+      "content": "grep -n 'HomeStreamOrchestrator' App/HopeNoteApp/Features/Home/HomeViewModel.swift",
+      "tags": ["streaming", "architecture"]
+    },
+    {
+      "tool_name": "shell",
+      "title": "Apply private redaction policy",
+      "content": "credential=<REDACTED_VALUE>",
+      "tags": ["privacy"],
+      "privacy_tags": ["private", "redact"]
+    },
+    {
+      "tool_name": "shell",
+      "title": "Record bugfix summary",
+      "content": "Fixed stale generationID race in stream delta sink and validated with smoke test.",
+      "tags": ["bugfix", "quality"]
+    }
+  ],
+  "end_note": "Demo session prepared for GIF recording workflow."
+}

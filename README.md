@@ -23,17 +23,23 @@ North star:
 
 ## Feature Tour
 
-### 1) Memory stream + timeline workflow (GIF placeholder)
+### 1) Memory stream + timeline workflow
 
-![Memory Stream GIF Placeholder](https://placehold.co/1200x640/0a7c66/ffffff?text=Feature+GIF+Placeholder+%7C+Memory+Stream+%2B+Timeline)
+![Memory Stream GIF](Assets/LaunchKit/gif/export/gif_01_memory-stream_v1.gif)
 
-### 2) Natural-language mem-search (GIF placeholder)
+### 2) Natural-language mem-search
 
-![mem-search GIF Placeholder](https://placehold.co/1200x640/0f766e/ffffff?text=Feature+GIF+Placeholder+%7C+Natural+Language+mem-search)
+![mem-search GIF](Assets/LaunchKit/gif/export/gif_02_mem-search_v1.gif)
 
-### 3) Privacy tags + stable/beta mode switch (GIF placeholder)
+### 3) Privacy tags + stable/beta mode switch
 
-![Privacy and Mode GIF Placeholder](https://placehold.co/1200x640/1d4ed8/ffffff?text=Feature+GIF+Placeholder+%7C+Dual-Tag+Privacy+%2B+Stable%2FBeta)
+![Privacy and Mode GIF](Assets/LaunchKit/gif/export/gif_03_privacy-mode_v1.gif)
+
+## 30-Second Value Path
+
+![30s Value Path](Assets/LaunchKit/screenshots/final/value-path-30s.svg)
+
+Install -> mem-search -> timeline -> ask.
 
 ## Launch Asset Production Kit
 
@@ -91,13 +97,24 @@ North star:
 
 See full history in [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
-Highlights in `v0.2.0`:
-- added natural-language retrieval command: `mem-search`
-- added local web viewer (`Scripts/codex_mem_web.py`)
-- added dual-tag privacy policy (`--privacy-tag`)
-- added runtime config APIs (`config-get` / `config-set`)
-- expanded MCP with `mem_nl_search`, `mem_config_get`, `mem_config_set`
-- expanded smoke test to validate CLI + MCP + Web + privacy + config
+Highlights in `v0.3.0`:
+- launch asset production toolkit (`Assets/LaunchKit/`)
+- CI asset gate (`.github/workflows/asset-gate.yml`)
+- mem export surface (`export-session`, `mem_export_session`)
+- web viewer upgrades (PRD caption copy + recording guide mode)
+- launch automation scripts (`make_gifs`, `validate_assets`, `social_pack`, `snapshot_docs`)
+- benchmark + roadmap + compatibility + security documentation set
+
+## Release Rhythm Template
+
+Every release batch follows one fixed package:
+- Release Notes update
+- 3 GIFs (`gif_01`, `gif_02`, `gif_03`)
+- 3 final screenshots
+- 1 comparison table update in README
+
+Reference:
+- [`Documentation/RELEASE_RHYTHM.md`](Documentation/RELEASE_RHYTHM.md)
 
 ## Quick Start
 
@@ -234,6 +251,7 @@ Lifecycle:
 - `mem_stop`
 - `mem_session_end`
 - `mem_summarize_session`
+- `mem_export_session`
 
 ## Repository Structure
 
@@ -242,6 +260,13 @@ Lifecycle:
 - `Scripts/codex_mem_web.py` local web app
 - `Scripts/codex_mem_smoketest.py` end-to-end simulation
 - `Scripts/repo_knowledge.py` repository context retrieval
+- `Scripts/make_gifs.sh` media pipeline (source -> webm/gif/poster)
+- `Scripts/validate_assets.py` asset + README gate checks
+- `Scripts/load_demo_data.py` one-click demo dataset loader
+- `Scripts/redact_screenshot.py` OCR-based screenshot redaction
+- `Scripts/generate_social_pack.py` X/Reddit/Product Hunt copy pack generator
+- `Scripts/compare_search_modes.py` search vs mem-search comparison runner
+- `Scripts/snapshot_docs.sh` release snapshot utility
 - `Skills/codex-mem/` skill package
 - `Documentation/` deep operational docs
 
@@ -260,6 +285,25 @@ Smoke test verifies:
 - stable/beta config updates
 - web APIs
 - MCP tool registration and calls
+
+## Launch Ops Commands
+
+```bash
+# 1) load sanitized recording dataset
+bash Scripts/load_demo_data.sh --reset
+
+# 2) render GIF bundle from source clips
+bash Scripts/make_gifs.sh --fps 12 --width 1200
+
+# 3) validate media + README links
+python Scripts/validate_assets.py --check-readme --strict
+
+# 4) snapshot docs/media per release
+bash Scripts/snapshot_docs.sh v0.3.0
+
+# 5) generate social copy pack
+python Scripts/generate_social_pack.py --version v0.3.0
+```
 
 ## Token Efficiency Strategy
 
@@ -290,9 +334,17 @@ Additional channels beyond GitHub/X:
 - [MCP Tools](Documentation/MCP_TOOLS.md)
 - [Architecture](Documentation/ARCHITECTURE.md)
 - [Launch Asset Playbook](Documentation/LAUNCH_ASSET_PLAYBOOK.md)
+- [Release Rhythm](Documentation/RELEASE_RHYTHM.md)
+- [Compatibility Matrix](Documentation/COMPATIBILITY_MATRIX.md)
+- [Failure Case Library](Documentation/FAILURE_CASE_LIBRARY.md)
+- [First-Screen Conversion Spec](Documentation/FIRST_SCREEN_CONVERSION_SPEC.md)
 - [Troubleshooting](Documentation/TROUBLESHOOTING.md)
 - [Release Notes](RELEASE_NOTES.md)
 - [Publishing Guide](PUBLISH.md)
+- [Public Roadmap](roadmap/public-roadmap.md)
+- [Benchmarks](BENCHMARKS.md)
+- [Security Policy](SECURITY.md)
+- [Asset Contribution Guide](CONTRIBUTING_ASSETS.md)
 
 ## Contributing
 

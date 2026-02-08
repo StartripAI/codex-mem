@@ -19,6 +19,7 @@ Assets/LaunchKit/
     annotated/   # callout/arrow overlays
     final/       # final PNG/JPG used in docs/README
     prd-copy/    # PRD-style screenshot copy templates
+  demo-data/     # sanitized seed data for recordings
 ```
 
 ## Naming Convention
@@ -43,3 +44,16 @@ Assets/LaunchKit/
 - Browser/theme and terminal font should be consistent across all clips
 - Disable noisy notifications before recording
 - Keep cursor movements deliberate and slow enough for playback at 1x
+
+## One-Click Demo Setup
+
+```bash
+bash Scripts/load_demo_data.sh --reset
+```
+
+## Batch Generation + Validation
+
+```bash
+bash Scripts/make_gifs.sh
+python Scripts/validate_assets.py --check-readme --strict
+```

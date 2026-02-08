@@ -61,3 +61,10 @@ git push -u origin codex/init
 - Keep one-command validation (`python3 Scripts/codex_mem_smoketest.py --root .`)
 - Include screenshots/GIF of local web viewer in README
 - Tag releases with clear changelog (`v0.x.y`)
+
+## 7) Launch batch checklist (required)
+
+- `python Scripts/validate_assets.py --check-readme --strict`
+- `bash Scripts/snapshot_docs.sh <version>`
+- `python Scripts/generate_social_pack.py --version <version>`
+- update `RELEASE_NOTES.md`

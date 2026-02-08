@@ -209,11 +209,18 @@ def run_smoke(root: pathlib.Path) -> Dict[str, Any]:
             ],
         )
         end_payload = run_cli(root, index_dir, ["session-end", "s1", "--project", project])
+        export_payload = run_cli(
+            root,
+            index_dir,
+            ["export-session", "s1", "--anonymize", "on", "--include-private"],
+        )
 
         if not blocked_payload.get("skipped"):
             raise RuntimeError("blocked privacy tag did not skip write")
         if private_payload.get("privacy", {}).get("visibility") != "private":
             raise RuntimeError("private privacy tag not applied")
+        if not export_payload.get("events"):
+            raise RuntimeError("export-session returned empty events")
 
         public_search = run_cli(
             root,
@@ -326,6 +333,7 @@ def run_smoke(root: pathlib.Path) -> Dict[str, Any]:
                 "mem_ask",
                 "mem_config_get",
                 "mem_config_set",
+                "mem_export_session",
             }
             if not required.issubset(tool_names):
                 raise RuntimeError(f"Missing required MCP tools: {required - tool_names}")
@@ -344,6 +352,9 @@ def run_smoke(root: pathlib.Path) -> Dict[str, Any]:
             mcp_get = mcp_tool(proc, 7, "mem_get_observations", {"ids": [first_id]})
             if int(mcp_get.get("count", 0)) < 1:
                 raise RuntimeError("MCP mem_get_observations returned no items")
+            mcp_export = mcp_tool(proc, 8, "mem_export_session", {"session_id": "s1"})
+            if not mcp_export.get("events"):
+                raise RuntimeError("MCP mem_export_session returned empty export")
         finally:
             proc.terminate()
             try:
@@ -358,6 +369,7 @@ def run_smoke(root: pathlib.Path) -> Dict[str, Any]:
             "summary_event_count": end_payload.get("summary", {}).get("event_count", 0),
             "nl_search_result_count": len(nl_search_payload.get("results", [])),
             "nl_search_token_estimate_total": token_est,
+            "export_event_count": len(export_payload.get("events", [])),
             "private_search_result_count": len(private_search.get("results", [])),
             "public_search_result_count": len(public_search.get("results", [])),
             "web_stream_public_count": len(stream_public.get("items", [])),

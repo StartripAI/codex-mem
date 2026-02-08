@@ -16,6 +16,7 @@ Provides Codex-accessible tools:
 - mem_stop
 - mem_session_end
 - mem_summarize_session
+- mem_export_session
 """
 
 from __future__ import annotations
@@ -30,7 +31,7 @@ from typing import Any, Dict, List, Mapping, Sequence
 
 
 SERVER_NAME = "codex-mem-mcp"
-SERVER_VERSION = "0.2.0"
+SERVER_VERSION = "0.3.0"
 PROTOCOL_VERSION = "2024-11-05"
 
 
@@ -263,6 +264,20 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
         "Regenerate structured session summary observations.",
         {
             "session_id": {"type": "string"},
+        },
+        ["session_id"],
+    ),
+    make_tool(
+        "mem_export_session",
+        "Export one session as shareable JSON with optional anonymization.",
+        {
+            "session_id": {"type": "string"},
+            "include_private": {"type": "boolean"},
+            "anonymize": {"type": "boolean"},
+            "max_events": {"type": "integer", "minimum": 1, "maximum": 5000},
+            "max_observations": {"type": "integer", "minimum": 1, "maximum": 5000},
+            "output_path": {"type": "string"},
+            "indent": {"type": "integer", "minimum": 0, "maximum": 8},
         },
         ["session_id"],
     ),
@@ -518,6 +533,25 @@ class CodexMemMCPServer:
             if not sid:
                 raise MCPError(-32602, "`session_id` is required")
             cmd = ["summarize-session", sid]
+            return self.text_content(self.run_cli(cmd))
+
+        if name == "mem_export_session":
+            sid = str(self.get_arg(arguments, "session_id", "")).strip()
+            if not sid:
+                raise MCPError(-32602, "`session_id` is required")
+            cmd = ["export-session", sid]
+            if bool(arguments.get("include_private")):
+                cmd.append("--include-private")
+            if arguments.get("anonymize") is not None and not bool(arguments.get("anonymize")):
+                cmd.extend(["--anonymize", "off"])
+            if arguments.get("max_events") is not None:
+                cmd.extend(["--max-events", str(int(arguments["max_events"]))])
+            if arguments.get("max_observations") is not None:
+                cmd.extend(["--max-observations", str(int(arguments["max_observations"]))])
+            if arguments.get("indent") is not None:
+                cmd.extend(["--indent", str(int(arguments["indent"]))])
+            if arguments.get("output_path"):
+                cmd.extend(["--output", str(arguments["output_path"])])
             return self.text_content(self.run_cli(cmd))
 
         raise MCPError(-32601, f"Unknown tool: {name}")

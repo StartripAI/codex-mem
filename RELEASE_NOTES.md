@@ -1,5 +1,48 @@
 # Release Notes
 
+## v0.3.0 - 2026-02-08
+
+### Added
+- launch asset production toolkit:
+  - `Assets/LaunchKit/` structured directories
+  - GIF shotlist template
+  - PRD screenshot copy template
+  - launch asset playbook
+- media and launch scripts:
+  - `Scripts/make_gifs.sh`
+  - `Scripts/validate_assets.py`
+  - `Scripts/load_demo_data.py`
+  - `Scripts/load_demo_data.sh`
+  - `Scripts/redact_screenshot.py`
+  - `Scripts/generate_social_pack.py`
+  - `Scripts/compare_search_modes.py`
+  - `Scripts/snapshot_docs.sh`
+  - `Scripts/generate_placeholder_assets.py`
+- MCP export tool: `mem_export_session`
+- CLI export command: `export-session`
+- CI asset gate workflow: `.github/workflows/asset-gate.yml`
+- new docs:
+  - `BENCHMARKS.md`
+  - `SECURITY.md`
+  - `CONTRIBUTING_ASSETS.md`
+  - `Documentation/RELEASE_RHYTHM.md`
+  - `Documentation/FAILURE_CASE_LIBRARY.md`
+  - `Documentation/COMPATIBILITY_MATRIX.md`
+  - `Documentation/FIRST_SCREEN_CONVERSION_SPEC.md`
+  - `roadmap/public-roadmap.md`
+
+### Changed
+- README now uses local GIF assets (no remote placeholder links)
+- README adds 30-second value path visual
+- web viewer adds:
+  - copy PRD caption button
+  - recording guide mode with step navigation
+- smoke test validates export session path and new MCP tool coverage
+
+### Validation
+- passed: `python3 Scripts/codex_mem_smoketest.py --root .`
+- passed: `python3 Scripts/validate_assets.py --check-readme --strict`
+
 ## v0.2.0 - 2026-02-08
 
 ### Added

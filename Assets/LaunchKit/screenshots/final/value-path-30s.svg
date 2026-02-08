@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="260" viewBox="0 0 1200 260">
+  <rect width="1200" height="260" fill="#0f172a"/>
+  <text x="24" y="38" fill="#e2e8f0" font-size="24">30-Second Value Path</text>
+  <g font-size="18" fill="#f8fafc" stroke="#22c55e" stroke-width="2">
+    <rect x="40" y="90" width="220" height="90" rx="12" fill="#1e293b"/>
+    <text x="90" y="145">Install</text>
+    <rect x="330" y="90" width="220" height="90" rx="12" fill="#1e293b"/>
+    <text x="385" y="145">mem-search</text>
+    <rect x="620" y="90" width="220" height="90" rx="12" fill="#1e293b"/>
+    <text x="690" y="145">timeline</text>
+    <rect x="910" y="90" width="220" height="90" rx="12" fill="#1e293b"/>
+    <text x="995" y="145">ask</text>
+  </g>
+  <g stroke="#22c55e" stroke-width="3" fill="none">
+    <line x1="260" y1="135" x2="330" y2="135"/>
+    <line x1="550" y1="135" x2="620" y2="135"/>
+    <line x1="840" y1="135" x2="910" y2="135"/>
+  </g>
+</svg>

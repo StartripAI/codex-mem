@@ -37,6 +37,7 @@ codex mcp add codex-mem -- python3 /ABS/PATH/codex-mem/Scripts/codex_mem_mcp.py 
 2. `mem_timeline`
 3. `mem_get_observations`
 4. `mem_ask` when repository grounding is needed
+5. `mem_export_session` when sharable session package is needed
 
 ## Recommended Lifecycle Capture Sequence
 

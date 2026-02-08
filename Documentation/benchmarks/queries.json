@@ -1,0 +1,5 @@
+[
+  {"query": "what bugs were fixed this week", "expected_terms": ["bug", "fix"]},
+  {"query": "streaming orchestration pipeline", "expected_terms": ["stream", "orchestrator"]},
+  {"query": "privacy tag behavior", "expected_terms": ["privacy", "redact"]}
+]

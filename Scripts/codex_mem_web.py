@@ -127,6 +127,27 @@ def html_page() -> str:
     }
     .private { color: #9a3412; border-color: #f5c9ab; background: #fff7ed; }
     .public { color: #14532d; border-color: #bbf7d0; background: #f0fdf4; }
+    .guide-panel {
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      margin-top: 8px;
+      background: #f8fffc;
+    }
+    .guide-target {
+      outline: 3px solid #14b8a6;
+      outline-offset: 2px;
+      transition: outline 120ms ease-in-out;
+    }
+    .caption-box {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: #f8fafc;
+      white-space: pre-wrap;
+      font-size: 13px;
+      min-height: 54px;
+    }
     @media (max-width: 980px) {
       .grid { grid-template-columns: 1fr; }
     }
@@ -153,7 +174,16 @@ def html_page() -> str:
     <div class="row">
       <input id="nlQuery" style="min-width:420px;flex:1" placeholder="e.g. What bugs were fixed last week?" />
       <button id="runQuery">Run mem-search</button>
+      <button id="copyCaption">Copy PRD Caption</button>
       <label><input type="checkbox" id="includePrivate" /> include private</label>
+      <label><input type="checkbox" id="guideMode" /> recording guide mode</label>
+      <button id="guidePrev">Prev</button>
+      <button id="guideNext">Next</button>
+    </div>
+    <div id="captionBox" class="caption-box muted">Caption will be generated from current query/results.</div>
+    <div id="guidePanel" class="guide-panel muted" style="display:none">
+      <strong>Recording Guide</strong>
+      <div id="guideText" style="margin-top:6px"></div>
     </div>
   </div>
 
@@ -187,6 +217,16 @@ def html_page() -> str:
   <script>
     const qs = (id) => document.getElementById(id);
     let refreshTimer = null;
+    let guideIndex = 0;
+    const GUIDE_STEPS = [
+      { target: 'project', text: 'Step 1: Set project to the demo dataset for recording.' },
+      { target: 'nlQuery', text: 'Step 2: Enter a natural-language query that demonstrates mem-search value.' },
+      { target: 'runQuery', text: 'Step 3: Run mem-search and wait for interpreted query + results.' },
+      { target: 'streamTable', text: 'Step 4: Show memory stream continuity and visibility labels.' },
+      { target: 'sessions', text: 'Step 5: Show session summary panel for completed work narrative.' },
+      { target: 'saveConfig', text: 'Step 6: Toggle stable/beta settings and save config.' },
+      { target: 'copyCaption', text: 'Step 7: Copy PRD-style screenshot caption and paste into release notes.' }
+    ];
 
     async function getJSON(url, options) {
       const res = await fetch(url, options);
@@ -244,6 +284,69 @@ def html_page() -> str:
                         <td>${r.created_at}</td>`;
         tbody.appendChild(tr);
       }
+      qs('captionBox').textContent = buildCaption(payload);
+    }
+
+    function buildCaption(payload) {
+      const q = qs('nlQuery').value || 'query';
+      const interpreted = payload && payload.interpreted ? payload.interpreted : {};
+      const resultCount = (payload && payload.results ? payload.results.length : 0);
+      return [
+        `Title: Ask memory in natural language`,
+        `User story: Team member needs project context without replaying full history.`,
+        `Scenario: \"${q}\"`,
+        `Interpreted filter: ${JSON.stringify(interpreted)}`,
+        `Outcome: ${resultCount} ranked results with progressive retrieval follow-up.`,
+        `Value: Faster context recall with lower token overhead.`
+      ].join('\\n');
+    }
+
+    async function copyCaption() {
+      const text = qs('captionBox').textContent || '';
+      if (!text.trim()) return;
+      await navigator.clipboard.writeText(text);
+      qs('status').textContent = 'PRD caption copied';
+    }
+
+    function clearGuideTarget() {
+      for (const step of GUIDE_STEPS) {
+        const el = qs(step.target);
+        if (el) el.classList.remove('guide-target');
+      }
+    }
+
+    function applyGuideStep() {
+      if (!qs('guideMode').checked) return;
+      clearGuideTarget();
+      const step = GUIDE_STEPS[guideIndex];
+      if (!step) return;
+      const el = qs(step.target);
+      if (el) {
+        el.classList.add('guide-target');
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+      qs('guideText').textContent = `${guideIndex + 1}/${GUIDE_STEPS.length} - ${step.text}`;
+    }
+
+    function toggleGuideMode() {
+      const enabled = qs('guideMode').checked;
+      qs('guidePanel').style.display = enabled ? 'block' : 'none';
+      if (!enabled) {
+        clearGuideTarget();
+        return;
+      }
+      guideIndex = Math.max(0, Math.min(guideIndex, GUIDE_STEPS.length - 1));
+      applyGuideStep();
+    }
+
+    function guideNext() {
+      guideIndex = (guideIndex + 1) % GUIDE_STEPS.length;
+      applyGuideStep();
+    }
+
+    function guidePrev() {
+      guideIndex = (guideIndex - 1 + GUIDE_STEPS.length) % GUIDE_STEPS.length;
+      applyGuideStep();
     }
 
     async function loadConfig() {
@@ -298,6 +401,10 @@ def html_page() -> str:
     qs('saveConfig').addEventListener('click', () => saveConfig().catch(err => alert(err.message)));
     qs('reload').addEventListener('click', () => reloadAll().catch(err => alert(err.message)));
     qs('runQuery').addEventListener('click', () => runNLSearch().catch(err => alert(err.message)));
+    qs('copyCaption').addEventListener('click', () => copyCaption().catch(err => alert(err.message)));
+    qs('guideMode').addEventListener('change', () => toggleGuideMode());
+    qs('guidePrev').addEventListener('click', () => guidePrev());
+    qs('guideNext').addEventListener('click', () => guideNext());
 
     loadConfig()
       .then(() => reloadAll())

@@ -152,11 +152,24 @@ codex mcp add codex-mem -- python3 /ABS/PATH/codex-mem/Scripts/codex_mem_mcp.py 
 ```
 
 Key tools:
-- retrieval: `mem_search`, `mem_nl_search`, `mem_timeline`, `mem_get_observations`, `mem_ask`
+- retrieval: `mem_search`, `mem_nl_search`, `mem_timeline`, `mem_get_observations`, `mem_ask`, `mem_export_session`
 - config: `mem_config_get`, `mem_config_set`
 - lifecycle: `mem_session_start`, `mem_user_prompt_submit`, `mem_post_tool_use`, `mem_stop`, `mem_session_end`, `mem_summarize_session`
 
-## 11) Validation
+## 11) Session Export for Sharing
+
+Export one session (anonymized by default):
+
+```bash
+bash Scripts/codex_mem.sh export-session s100 --anonymize on --output /tmp/s100_export.json
+```
+
+Use cases:
+- issue reproduction handoff
+- support debugging package
+- sanitized knowledge sharing
+
+## 12) Validation
 
 Run comprehensive simulation:
 
@@ -172,7 +185,7 @@ Validation coverage:
 - web API
 - MCP tools
 
-## 12) Known Constraints
+## 13) Known Constraints
 
 - Local hash-based vectors are lightweight by design, not external embedding APIs
 - Web viewer is local and unauthenticated by default (bind to loopback host)

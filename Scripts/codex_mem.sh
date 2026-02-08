@@ -7,6 +7,14 @@ PYTHON_BIN="${PYTHON_BIN:-python3}"
 SCRIPT="${ROOT}/Scripts/codex_mem.py"
 MCP_SCRIPT="${ROOT}/Scripts/codex_mem_mcp.py"
 WEB_SCRIPT="${ROOT}/Scripts/codex_mem_web.py"
+MAKE_GIFS_SCRIPT="${ROOT}/Scripts/make_gifs.sh"
+VALIDATE_ASSETS_SCRIPT="${ROOT}/Scripts/validate_assets.py"
+LOAD_DEMO_SCRIPT="${ROOT}/Scripts/load_demo_data.py"
+REDACT_SCREENSHOT_SCRIPT="${ROOT}/Scripts/redact_screenshot.py"
+SOCIAL_PACK_SCRIPT="${ROOT}/Scripts/generate_social_pack.py"
+COMPARE_SEARCH_SCRIPT="${ROOT}/Scripts/compare_search_modes.py"
+SNAPSHOT_DOCS_SCRIPT="${ROOT}/Scripts/snapshot_docs.sh"
+PLACEHOLDER_SCRIPT="${ROOT}/Scripts/generate_placeholder_assets.py"
 
 usage() {
   cat <<'EOF'
@@ -21,11 +29,20 @@ Usage:
   Scripts/codex_mem.sh mem-search "<query>" [--limit N] [--session-id SID]
   Scripts/codex_mem.sh config-get
   Scripts/codex_mem.sh config-set [--channel stable|beta] [--viewer-refresh-sec N] [--beta-endless-mode on|off]
+  Scripts/codex_mem.sh export-session <session_id> [--anonymize on|off] [--include-private] [--output PATH]
   Scripts/codex_mem.sh timeline <E123|O45> [--before N] [--after N]
   Scripts/codex_mem.sh get <E123|O45> [more IDs...]
   Scripts/codex_mem.sh ask "<question>" [ask-args...]
   Scripts/codex_mem.sh web [--host 127.0.0.1] [--port 37777] [--project-default NAME]
   Scripts/codex_mem.sh mcp [--project-default NAME]
+  Scripts/codex_mem.sh load-demo-data [--reset]
+  Scripts/codex_mem.sh make-gifs [--fps N] [--width N]
+  Scripts/codex_mem.sh validate-assets [--check-readme] [--strict]
+  Scripts/codex_mem.sh redact-screenshot <input> <output>
+  Scripts/codex_mem.sh social-pack --version vX.Y.Z
+  Scripts/codex_mem.sh compare-search [--project NAME]
+  Scripts/codex_mem.sh snapshot-docs <version>
+  Scripts/codex_mem.sh generate-placeholders
 
 Environment overrides:
   ROOT         Repository root (default: parent of Scripts)
@@ -75,6 +92,9 @@ case "${cmd}" in
   config-set)
     exec "${PYTHON_BIN}" "${SCRIPT}" --root "${ROOT}" config-set "$@"
     ;;
+  export-session)
+    exec "${PYTHON_BIN}" "${SCRIPT}" --root "${ROOT}" export-session "$@"
+    ;;
   timeline)
     exec "${PYTHON_BIN}" "${SCRIPT}" --root "${ROOT}" timeline "$@"
     ;;
@@ -97,6 +117,30 @@ case "${cmd}" in
       exit 1
     fi
     exec "${PYTHON_BIN}" "${MCP_SCRIPT}" --root "${ROOT}" "$@"
+    ;;
+  load-demo-data)
+    exec "${PYTHON_BIN}" "${LOAD_DEMO_SCRIPT}" --root "${ROOT}" "$@"
+    ;;
+  make-gifs)
+    exec "${MAKE_GIFS_SCRIPT}" "$@"
+    ;;
+  validate-assets)
+    exec "${PYTHON_BIN}" "${VALIDATE_ASSETS_SCRIPT}" --root "${ROOT}" "$@"
+    ;;
+  redact-screenshot)
+    exec "${PYTHON_BIN}" "${REDACT_SCREENSHOT_SCRIPT}" "$@"
+    ;;
+  social-pack)
+    exec "${PYTHON_BIN}" "${SOCIAL_PACK_SCRIPT}" --root "${ROOT}" "$@"
+    ;;
+  compare-search)
+    exec "${PYTHON_BIN}" "${COMPARE_SEARCH_SCRIPT}" --root "${ROOT}" "$@"
+    ;;
+  snapshot-docs)
+    exec "${SNAPSHOT_DOCS_SCRIPT}" "$@"
+    ;;
+  generate-placeholders)
+    exec "${PYTHON_BIN}" "${PLACEHOLDER_SCRIPT}"
     ;;
   help|-h|--help)
     usage
