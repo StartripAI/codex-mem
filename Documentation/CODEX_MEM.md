@@ -1,72 +1,163 @@
-# Codex-Mem (Codex 专属长期记忆层)
+# Codex-Mem Operational Guide
 
-## 目标
+This guide documents production-style usage of `codex-mem` for Codex workflows.
 
-在本地为 Codex 提供跨会话长期记忆，并和 `repo_knowledge` 融合，降低重复上下文 token 开销。
+## 1) Goals
 
-核心能力：
-- 5 生命周期钩子：`session-start / user-prompt-submit / post-tool-use / stop / session-end`
-- 三层渐进检索：
-  - `search`（紧凑索引层）
-  - `timeline`（时序上下文层）
-  - `get-observations`（完整详情层）
-- 融合检索：`ask` 同时拉 Memory + Repo 代码上下文
-- MCP 直连：`Scripts/codex_mem_mcp.py` 提供 `mem_*` 工具
-- Skill 封装：`Skills/codex-mem/SKILL.md`
+- Preserve useful engineering context across sessions.
+- Reduce repeated prompt/context boilerplate.
+- Keep retrieval token-efficient via progressive disclosure.
+- Ground follow-up answers in both memory history and live code evidence.
 
-## 快速开始
+## 2) Components
 
-```bash
-bash Scripts/codex_mem.sh init --project hopenote
-```
+- `Scripts/codex_mem.py`: core local memory engine and CLI
+- `Scripts/codex_mem_mcp.py`: MCP server exposing `mem_*` tools
+- `Scripts/codex_mem.sh`: command wrapper
+- `Scripts/repo_knowledge.py`: code retrieval engine used by fused `ask`
+- `Skills/codex-mem/`: reusable skill package for Codex flows
 
-写入一个完整会话：
+## 3) Setup
 
 ```bash
-bash Scripts/codex_mem.sh session-start s1 --project hopenote --title "S1"
-bash Scripts/codex_mem.sh prompt s1 "先阅读 readmefirst.md 并梳理主流程" --project hopenote
-bash Scripts/codex_mem.sh tool s1 shell "grep HomeTabView+Logic.swift" --project hopenote --title "检索 Home 入口" --compact
-bash Scripts/codex_mem.sh stop s1 --project hopenote --content "阶段性停止"
-bash Scripts/codex_mem.sh session-end s1 --project hopenote
+bash Scripts/codex_mem.sh init --project my-project
 ```
 
-三层检索：
+Data location:
+- `<repo>/.codex_mem/codex_mem.sqlite3`
+
+## 4) Lifecycle Pattern
+
+Recommended event sequence per session:
+
+1. `session-start`
+2. `user-prompt-submit`
+3. `post-tool-use` (repeat)
+4. `stop` (optional checkpoints)
+5. `session-end`
+
+Example:
 
 ```bash
-# Stage 1
-bash Scripts/codex_mem.sh search "home streaming orchestrator" --project hopenote --limit 20
-
-# Stage 2
-bash Scripts/codex_mem.sh timeline E12 --before 5 --after 5
-
-# Stage 3
-bash Scripts/codex_mem.sh get E12 O3
+bash Scripts/codex_mem.sh session-start s100 --project my-project --title "Refactor stream pipeline"
+bash Scripts/codex_mem.sh prompt s100 "Review current state and isolate bottlenecks" --project my-project
+bash Scripts/codex_mem.sh tool s100 shell "rg -n 'stream' App" --project my-project --compact
+bash Scripts/codex_mem.sh stop s100 --project my-project --content "checkpoint after search"
+bash Scripts/codex_mem.sh session-end s100 --project my-project
 ```
 
-融合昨天的 repo 检索：
+## 5) Progressive Retrieval Workflow
+
+### Layer 1: Search
 
 ```bash
-bash Scripts/codex_mem.sh ask "Home streaming 的入口和状态更新链路" --project hopenote
-
-# 或沿用原入口
-bash Scripts/repo_knowledge.sh ask-plus "Home streaming 的入口和状态更新链路" --project hopenote
+bash Scripts/codex_mem.sh search "streaming orchestration" --project my-project --limit 20
 ```
 
-MCP 挂载（Codex）：
+Returns compact index candidates with IDs and scores.
+
+### Layer 2: Timeline
 
 ```bash
-codex mcp add codex-mem -- python3 /ABS/PATH/hopeNote/Scripts/codex_mem_mcp.py --root /ABS/PATH/hopeNote --project-default hopenote
+bash Scripts/codex_mem.sh timeline E42 --before 5 --after 5
 ```
 
-## 数据与隐私
+Adds temporal context around selected IDs.
 
-- 数据仅存本地：`<repo>/.codex_mem/codex_mem.sqlite3`
-- 存储结构：`sessions / events / observations + FTS5`
-- 向量为本地哈希语义向量（无外部模型依赖）
+### Layer 3: Full observations
 
-## 设计说明
+```bash
+bash Scripts/codex_mem.sh get E42 O8 O9
+```
 
-- `search` 默认输出 ID + 标题 + 类型 + 分数，控制 token。
-- `timeline` 只在选中目标后扩展邻域上下文。
-- `get-observations` 才拉完整内容，避免一次性塞满上下文窗口。
-- `ask` 将 Memory 三层检索与 `Scripts/repo_knowledge.py query --json` 结果融合，并返回 token 估算。
+Fetches full payload only for selected IDs.
+
+## 6) Fused Retrieval (Memory + Repo)
+
+```bash
+bash Scripts/codex_mem.sh ask "What is the current stream update chain from input to persistence?" --project my-project
+```
+
+`ask` combines:
+- memory context from this project
+- code chunks from `repo_knowledge.py`
+- token estimate breakdown
+
+## 7) MCP Integration
+
+### Start MCP server
+
+```bash
+python3 Scripts/codex_mem_mcp.py --root . --project-default my-project
+```
+
+### Register in Codex
+
+```bash
+codex mcp add codex-mem -- python3 /ABS/PATH/codex-mem/Scripts/codex_mem_mcp.py --root /ABS/PATH/codex-mem --project-default my-project
+```
+
+### Tools exposed
+
+- `mem_search`
+- `mem_timeline`
+- `mem_get_observations`
+- `mem_ask`
+- `mem_session_start`
+- `mem_user_prompt_submit`
+- `mem_post_tool_use`
+- `mem_stop`
+- `mem_session_end`
+- `mem_summarize_session`
+
+## 8) Privacy Controls
+
+`mem_post_tool_use` can skip writes when tags include blocked labels:
+- `no_mem`
+- `private`
+- `sensitive`
+- `secret`
+
+Example:
+
+```bash
+bash Scripts/codex_mem.sh tool s100 shell "cat .env" --project my-project --tag private
+```
+
+## 9) Output Compaction for Heavy Logs
+
+Use compaction on large tool outputs:
+
+```bash
+bash Scripts/codex_mem.sh tool s100 shell "npm test" --project my-project --compact --compact-chars 1200
+```
+
+Compaction stores:
+- head slice
+- signal lines (errors/warnings/failures/etc.)
+- tail slice
+
+## 10) Validation
+
+Run smoke test:
+
+```bash
+python3 Scripts/codex_mem_smoketest.py --root .
+```
+
+Validation scope:
+- lifecycle capture
+- search/timeline/get
+- MCP initialize and tool calls
+- non-empty retrieval output
+
+## 11) Distribution
+
+For release and publishing workflow, see:
+- `PUBLISH.md`
+
+## 12) Known Constraints
+
+- No web dashboard in current version (CLI + MCP only)
+- Default vectors are local hash embeddings
+- Fused ask expects `repo_knowledge.py` to be present in `Scripts/`
