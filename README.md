@@ -13,11 +13,19 @@ Codex-native persistent memory with progressive retrieval, local viewer UX, and 
 ![Local First](https://img.shields.io/badge/storage-local--first-334155)
 ![License](https://img.shields.io/badge/license-not%20set-lightgrey)
 
-[Quick Start](#quick-start) • [Comparison](#comparison-table) • [Release Notes](RELEASE_NOTES.md) • [Docs](Documentation/CODEX_MEM.md)
+[Quick Start](#quick-start) • [Prompt Playbook](Documentation/PROMPT_PLAYBOOK_EN.md) • [Comparison](#comparison-table) • [Release Notes](RELEASE_NOTES.md) • [Docs](Documentation/CODEX_MEM.md)
 
 Benchmark source:
 - [`Documentation/benchmarks/marketing_claims_20260208.json`](Documentation/benchmarks/marketing_claims_20260208.json)
 - Reproduce with: `python3 Scripts/benchmark_marketing_claim.py --root . --out Documentation/benchmarks/marketing_claims_20260208.json`
+
+Scenario savings (2026-02-09):
+- Cold start (lean): **63.98%** token saving
+- Cold start (deeper context): **72.26%** token saving
+- Daily Q&A (standard): **99.84%** token saving
+- Daily Q&A (deep retrieval): **99.70%** token saving
+- Incident forensics (wide detail pull): **88.97%** token saving
+- Full matrix: [`Documentation/benchmarks/scenario_savings_20260209.json`](Documentation/benchmarks/scenario_savings_20260209.json)
 
 ## Why codex-mem
 

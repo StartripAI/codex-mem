@@ -1,0 +1,254 @@
+{
+  "date": "2026-02-09",
+  "benchmark_script": "Scripts/benchmark_marketing_claim.py",
+  "query": "how did we handle memory retrieval privacy and stream orchestrator issues",
+  "cases": [
+    {
+      "case": "cold_start_lean",
+      "dataset": {
+        "project": "cold-start-lean",
+        "events": 14,
+        "observations": 8,
+        "total_items": 22
+      },
+      "scenario": {
+        "name": "marketing_default",
+        "sessions": 2,
+        "tool_events_per_session": 4,
+        "noise_chars": 65,
+        "chunks_per_event": 13,
+        "stage1_limit": 8,
+        "details_limit": 3,
+        "timeline_before": 1,
+        "timeline_after": 1,
+        "startup_samples": 3,
+        "seed": 31
+      },
+      "token": {
+        "naive_full_load": 2846,
+        "progressive_load": 1025,
+        "layer1_tokens": 52,
+        "layer2_timeline_tokens": 0,
+        "layer3_detail_tokens": 973,
+        "saving_ratio": 0.6398,
+        "saving_percent": 63.98
+      },
+      "startup_ms": {
+        "stage1_time_to_first_context_samples": [
+          54.225,
+          55.516,
+          63.227
+        ],
+        "full_history_load_samples": [
+          63.126,
+          54.934,
+          54.271
+        ],
+        "stage1_median": 55.516,
+        "full_history_median": 54.934,
+        "speedup_x": 0.99
+      }
+    },
+    {
+      "case": "cold_start_deep",
+      "dataset": {
+        "project": "cold-start-deep",
+        "events": 39,
+        "observations": 12,
+        "total_items": 51
+      },
+      "scenario": {
+        "name": "marketing_default",
+        "sessions": 3,
+        "tool_events_per_session": 10,
+        "noise_chars": 65,
+        "chunks_per_event": 13,
+        "stage1_limit": 12,
+        "details_limit": 8,
+        "timeline_before": 3,
+        "timeline_after": 3,
+        "startup_samples": 3,
+        "seed": 41
+      },
+      "token": {
+        "naive_full_load": 10129,
+        "progressive_load": 2810,
+        "layer1_tokens": 72,
+        "layer2_timeline_tokens": 135,
+        "layer3_detail_tokens": 2603,
+        "saving_ratio": 0.7226,
+        "saving_percent": 72.26
+      },
+      "startup_ms": {
+        "stage1_time_to_first_context_samples": [
+          58.217,
+          60.382,
+          64.77
+        ],
+        "full_history_load_samples": [
+          62.517,
+          63.357,
+          58.048
+        ],
+        "stage1_median": 60.382,
+        "full_history_median": 62.517,
+        "speedup_x": 1.035
+      }
+    },
+    {
+      "case": "daily_standard",
+      "dataset": {
+        "project": "daily-standard",
+        "events": 1230,
+        "observations": 120,
+        "total_items": 1350
+      },
+      "scenario": {
+        "name": "marketing_default",
+        "sessions": 30,
+        "tool_events_per_session": 38,
+        "noise_chars": 65,
+        "chunks_per_event": 13,
+        "stage1_limit": 20,
+        "details_limit": 8,
+        "timeline_before": 4,
+        "timeline_after": 4,
+        "startup_samples": 5,
+        "seed": 19
+      },
+      "token": {
+        "naive_full_load": 379275,
+        "progressive_load": 596,
+        "layer1_tokens": 200,
+        "layer2_timeline_tokens": 260,
+        "layer3_detail_tokens": 136,
+        "saving_ratio": 0.9984,
+        "saving_percent": 99.84
+      },
+      "startup_ms": {
+        "stage1_time_to_first_context_samples": [
+          62.032,
+          60.344,
+          60.21,
+          61.741,
+          60.534
+        ],
+        "full_history_load_samples": [
+          80.77,
+          81.199,
+          80.806,
+          81.761,
+          82.661
+        ],
+        "stage1_median": 60.534,
+        "full_history_median": 81.199,
+        "speedup_x": 1.341
+      }
+    },
+    {
+      "case": "daily_deep",
+      "dataset": {
+        "project": "daily-deep",
+        "events": 1230,
+        "observations": 120,
+        "total_items": 1350
+      },
+      "scenario": {
+        "name": "marketing_default",
+        "sessions": 30,
+        "tool_events_per_session": 38,
+        "noise_chars": 65,
+        "chunks_per_event": 13,
+        "stage1_limit": 30,
+        "details_limit": 20,
+        "timeline_before": 8,
+        "timeline_after": 8,
+        "startup_samples": 5,
+        "seed": 23
+      },
+      "token": {
+        "naive_full_load": 379302,
+        "progressive_load": 1140,
+        "layer1_tokens": 318,
+        "layer2_timeline_tokens": 482,
+        "layer3_detail_tokens": 340,
+        "saving_ratio": 0.997,
+        "saving_percent": 99.7
+      },
+      "startup_ms": {
+        "stage1_time_to_first_context_samples": [
+          60.718,
+          61.353,
+          60.104,
+          61.018,
+          60.259
+        ],
+        "full_history_load_samples": [
+          79.342,
+          81.208,
+          80.682,
+          81.207,
+          80.162
+        ],
+        "stage1_median": 60.718,
+        "full_history_median": 80.682,
+        "speedup_x": 1.329
+      }
+    },
+    {
+      "case": "incident_forensics",
+      "dataset": {
+        "project": "incident-forensics",
+        "events": 1230,
+        "observations": 120,
+        "total_items": 1350
+      },
+      "scenario": {
+        "name": "marketing_default",
+        "sessions": 30,
+        "tool_events_per_session": 38,
+        "noise_chars": 65,
+        "chunks_per_event": 13,
+        "stage1_limit": 120,
+        "details_limit": 120,
+        "timeline_before": 20,
+        "timeline_after": 20,
+        "startup_samples": 5,
+        "seed": 29
+      },
+      "token": {
+        "naive_full_load": 379251,
+        "progressive_load": 41817,
+        "layer1_tokens": 838,
+        "layer2_timeline_tokens": 1300,
+        "layer3_detail_tokens": 39679,
+        "saving_ratio": 0.8897,
+        "saving_percent": 88.97
+      },
+      "startup_ms": {
+        "stage1_time_to_first_context_samples": [
+          66.865,
+          67.054,
+          65.807,
+          67.427,
+          67.286
+        ],
+        "full_history_load_samples": [
+          91.584,
+          89.173,
+          82.495,
+          84.179,
+          81.997
+        ],
+        "stage1_median": 67.054,
+        "full_history_median": 84.179,
+        "speedup_x": 1.255
+      }
+    }
+  ],
+  "notes": [
+    "99%+ savings is realistic in warm daily workflows with large historical memory and selective Layer-3 fetch.",
+    "Cold start savings are lower because there is less history to prune and code reading dominates.",
+    "Startup metric here is local CLI time-to-first-context (Layer-1 search median) vs full-history load median."
+  ]
+}

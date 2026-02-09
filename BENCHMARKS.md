@@ -44,3 +44,22 @@ python3 Scripts/benchmark_marketing_claim.py --root . --out Documentation/benchm
 
 - Always use sanitized demo data
 - Keep query set stable for comparability
+
+
+## Scenario Savings Snapshot (2026-02-09)
+
+Source file:
+- `Documentation/benchmarks/scenario_savings_20260209.json`
+
+| Scenario | Dataset Size (events/obs) | Token Saving | Startup Median (Layer-1) | Startup Speedup vs Full Load |
+|---|---:|---:|---:|---:|
+| Cold start (lean) | 14 / 8 | 63.98% | 55.516 ms | 0.99x |
+| Cold start (deeper context) | 39 / 12 | 72.26% | 60.382 ms | 1.04x |
+| Daily Q&A (standard) | 1230 / 120 | 99.84% | 60.534 ms | 1.34x |
+| Daily Q&A (deep retrieval) | 1230 / 120 | 99.70% | 60.718 ms | 1.33x |
+| Incident forensics (wide detail pull) | 1230 / 120 | 88.97% | 67.054 ms | 1.26x |
+
+Interpretation:
+- 99%+ savings is realistic in warm daily workflows.
+- Cold start savings are lower because initial understanding still requires code reading.
+- Forensics savings remain high, but drop when you intentionally pull many Layer-3 details.

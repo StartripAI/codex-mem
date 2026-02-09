@@ -1,5 +1,21 @@
 # Release Notes
 
+## v0.3.3 - 2026-02-09
+
+### Added
+- English prompt playbook for multi-case usage:
+  - `Documentation/PROMPT_PLAYBOOK_EN.md`
+- scenario benchmark matrix:
+  - `Documentation/benchmarks/scenario_savings_20260209.json`
+
+### Changed
+- README now links to the English prompt playbook and scenario-based token savings
+- BENCHMARKS now includes cold-start, daily, and forensics savings snapshots
+
+### Validation
+- passed: `python3 Scripts/benchmark_marketing_claim.py` across scenario matrix
+- passed: `python3 Scripts/codex_mem_smoketest.py --root .`
+
 ## v0.3.1 - 2026-02-08
 
 ### Removed
