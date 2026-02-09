@@ -260,7 +260,6 @@ Lifecycle:
 - `Scripts/validate_assets.py` asset + README gate checks
 - `Scripts/load_demo_data.py` one-click demo dataset loader
 - `Scripts/redact_screenshot.py` OCR-based screenshot redaction
-- `Scripts/generate_social_pack.py` X/Reddit/Product Hunt copy pack generator
 - `Scripts/compare_search_modes.py` search vs mem-search comparison runner
 - `Scripts/snapshot_docs.sh` release snapshot utility
 - `Skills/codex-mem/` skill package
@@ -309,19 +308,6 @@ Token reduction comes from retrieval discipline:
 - full payload fetch only for shortlisted IDs
 - bounded repo context for fused ask
 - optional/automatic output compaction for verbose tool logs
-
-## Distribution Notes
-
-Primary channels:
-- GitHub repo + releases
-- MCP + Skills setup snippets in docs
-
-Additional channels beyond GitHub/X:
-- Product Hunt
-- Hacker News (`Show HN`)
-- Dev.to, Medium/Substack technical posts
-- Reddit engineering communities
-- Discord/Slack AI engineering communities
 
 ## Documentation
 
