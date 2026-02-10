@@ -27,11 +27,13 @@ from codex_mem import (  # noqa: E402
     DEFAULT_SNIPPET_CHARS,
     DEFAULT_VECTOR_DIM,
     blended_search,
+    db_counts,
     fetch_meta,
     filter_results_by_intent,
     get_runtime_config,
     open_db,
     parse_natural_query,
+    seed_repo_baseline,
     set_runtime_config,
 )
 
@@ -594,6 +596,7 @@ class ViewerServer(ThreadingHTTPServer):
     def nl_search(self, *, project: str, query: str, limit: int, include_private: bool) -> Dict[str, Any]:
         conn = self.open_conn()
         try:
+            auto_seeded = seed_repo_baseline(conn, self.root, project, trigger_query=query)
             meta = fetch_meta(conn)
             vector_dim = int(meta.get("vector_dim", str(DEFAULT_VECTOR_DIM)))
             parsed = parse_natural_query(query)
@@ -622,6 +625,8 @@ class ViewerServer(ThreadingHTTPServer):
                 "stage": "nl-search",
                 "query": query,
                 "interpreted": parsed,
+                "auto_seeded": bool(auto_seeded),
+                "db_counts": db_counts(conn),
                 "results": [
                     {
                         "id": item.item_id,
