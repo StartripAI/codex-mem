@@ -1,5 +1,22 @@
 # Release Notes
 
+## v0.3.4 - 2026-02-10
+
+### Added
+- scenario matrix generator script:
+  - `Scripts/benchmark_scenario_savings.py`
+
+### Changed
+- refreshed benchmark snapshots and updated README claims:
+  - `Documentation/benchmarks/marketing_claims_20260210.json`
+  - `Documentation/benchmarks/scenario_savings_20260210.json`
+  - `Documentation/benchmarks/repo_onboarding_codex_mem_20260210.json`
+
+### Validation
+- passed: `python3 Scripts/benchmark_marketing_claim.py --root .`
+- passed: `python3 Scripts/benchmark_scenario_savings.py --root .`
+- passed: `python3 Scripts/codex_mem_smoketest.py --root .`
+
 ## v0.3.3 - 2026-02-09
 
 ### Added

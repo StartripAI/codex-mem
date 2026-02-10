@@ -1,31 +1,35 @@
 # Prompt Playbook (English)
 
-Use these copy-ready prompts in any project. They enforce codex-mem's 3-layer progressive disclosure retrieval and keep context bounded with evidence-first gating.
+Use these copy-ready prompts in any project. They enforce codex-mem's **progressive disclosure retrieval** (Layer 1 shortlist → Layer 2 timeline → Layer 3 details) and **evidence-first gating** (only pull more context when the current evidence is insufficient).
 
 ## Case 1: Cold Start (learn project, then wait for questions)
 
 ```text
-In this project, run codex-mem onboarding (progressive retrieval + evidence gating), then switch to Q&A standby.
+Cold start this project with codex-mem, then switch to Q&A standby.
 
 Constraints:
 - Do not modify code
 - Do not generate any report files
 - Do not print exploration logs (no explored/list/search progress chatter)
-- Stop if total retrieval payload exceeds the working context budget (default: 2500 tokens estimated) and report what is missing
 
 Workflow (strict order):
 1) Confirm command entrypoint (codex_mem.sh or codex_mem.py).
-2) mem-search on: north star, architecture, entrypoints, core flow, persistence/output, major risks (limit 8).
-3) timeline for top 2 hits (before 2, after 2).
-4) get-observations for at most 4 selected IDs.
-5) Read only up to 3 key files if evidence is still insufficient.
+2) Run `codex-mem ask` with:
+   - question: "Learn this project: north star, architecture, module map, entrypoints, main flow, persistence/output, top risks."
+   - `--code-top-k 10 --code-module-limit 6 --snippet-chars 1000`
+   - `--search-limit 6 --detail-limit 3`
+3) If the answer is still ambiguous, use the 3-layer memory tools in order:
+   - Layer 1: `mem-search "<missing topic>" --limit 8`
+   - Layer 2: `timeline <top-id> --before 2 --after 2`
+   - Layer 3: `get-observations <id1> <id2> <id3>`
+4) Read only the minimum number of files needed to confirm the top-level model (max 3).
 
 Output only:
 1. North star goal
 2. Module map
 3. Main flow (entry -> processing -> persistence/output)
 4. Top 3 technical risks with evidence (path + function/module)
-5. What context is loaded vs intentionally not loaded
+5. Assumptions I will carry forward (max 5)
 
 Then wait for my questions. Do not rebuild full context unless I explicitly say: "rebuild learning context".
 ```
@@ -36,10 +40,10 @@ Then wait for my questions. Do not rebuild full context unless I explicitly say:
 Answer using existing codex-mem context in this project. Do incremental retrieval only.
 
 Workflow:
-1) mem-search "<my question>" (limit 6)
-2) timeline for top 2 IDs (before 2, after 2)
-3) get-observations for top 3 IDs
-4) Read at most 2 files only if evidence is missing
+1) `codex-mem ask "<my question>" --search-limit 6 --detail-limit 3 --code-top-k 6 --code-module-limit 4`
+2) If the question is time/sequence dependent (what happened before/after), run:
+   - `timeline <top-id> --before 2 --after 2`
+3) Read at most 2 files only if evidence is missing.
 
 Output:
 - Direct answer
@@ -98,8 +102,9 @@ No file generation, no code changes.
 Implement now, but keep codex-mem evidence-first process.
 
 Before coding:
-1) mem-search -> timeline -> get-observations for current task
-2) Confirm assumptions and affected modules
+1) `codex-mem ask "<task>" --search-limit 8 --detail-limit 5 --code-top-k 12 --code-module-limit 6`
+2) If needed: mem-search -> timeline -> get-observations for historical decisions
+3) Confirm assumptions and affected modules
 
 During coding:
 - Minimal patch
@@ -114,6 +119,6 @@ After coding:
 
 ## Practical Rule of Thumb
 
-- Cold start: savings are moderate because code reading dominates.
+- Cold start: savings are moderate because code grounding still dominates.
 - Daily Q&A: savings are highest because retrieval can stay narrow and incremental.
-- Deep forensics: savings are still high, but lower than daily Q&A due to wider Layer-3 fetch.
+- Deep forensics: savings remain high, but drop when you intentionally pull many Layer-3 details.

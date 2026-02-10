@@ -29,26 +29,25 @@
   },
   "startup_ms": {
     "stage1_time_to_first_context_samples": [
-      60.5,
-      61.152,
-      61.308,
-      70.66,
-      85.185
+      66.344,
+      68.547,
+      63.071,
+      68.429,
+      66.571
     ],
     "full_history_load_samples": [
-      225.881,
-      88.896,
-      85.023,
-      88.397,
-      83.148
+      89.31,
+      88.775,
+      89.958,
+      88.794,
+      89.202
     ],
-    "stage1_median": 61.308,
-    "full_history_median": 88.397,
-    "speedup_x": 1.442
+    "stage1_median": 66.571,
+    "full_history_median": 89.202,
+    "speedup_x": 1.34
   },
   "query": {
     "text": "how did we handle memory retrieval privacy and stream orchestrator issues",
     "timeline_anchor": "O68"
   }
 }
-
