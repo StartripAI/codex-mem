@@ -1,8 +1,8 @@
 {
-  "date": "2026-02-10",
+  "date": "2026-02-11",
   "benchmark": "repo_knowledge_onboarding_v1",
   "target": {
-    "label": "HopeNote (private)",
+    "label": "codex-mem (this repo)",
     "index_dir": ".codex_knowledge_bench",
     "all_files": true,
     "extra_ignored_dirs": [
@@ -10,36 +10,36 @@
     ]
   },
   "index": {
-    "time_ms": 801.348,
+    "time_ms": 337.441,
     "summary": {
-      "avg_chunk_tokens": 209.864,
-      "chunk_count": 1072,
-      "file_count": 195,
-      "vector_dim": 256,
-      "module_count": 26,
-      "embedding_provider": "local"
+      "embedding_provider": "local",
+      "chunk_count": 274,
+      "file_count": 56,
+      "avg_chunk_tokens": 208.901,
+      "module_count": 12,
+      "vector_dim": 256
     }
   },
   "baseline_full_context": {
-    "files": 195,
-    "chunks": 1072,
-    "chars": 1764992,
-    "tokens_est": 441248,
-    "scan_time_ms": 3.258
+    "files": 56,
+    "chunks": 274,
+    "chars": 455608,
+    "tokens_est": 113902,
+    "scan_time_ms": 1.436
   },
   "onboarding_prompt": {
     "question": "Learn this project: north star, architecture, modules, entrypoints, main flow, persistence/output, top risks.",
     "top_k": 10,
     "module_limit": 6,
     "snippet_chars": 1000,
-    "chars": 10997,
-    "tokens_est": 2750,
-    "time_ms": 98.971
+    "chars": 10228,
+    "tokens_est": 2557,
+    "time_ms": 83.041
   },
   "savings": {
-    "context_saving_ratio": 0.9938,
-    "context_saving_percent": 99.38,
-    "context_speedup_x": 0.033
+    "context_saving_ratio": 0.9776,
+    "context_saving_percent": 97.76,
+    "context_speedup_x": 0.017
   },
   "notes": [
     "Token estimates use chars/4 heuristic (same as codex-mem memory token estimator).",

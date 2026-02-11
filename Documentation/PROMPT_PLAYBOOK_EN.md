@@ -18,11 +18,16 @@ Workflow (strict order):
    - question: "Learn this project: north star, architecture, module map, entrypoints, main flow, persistence/output, top risks."
    - `--code-top-k 10 --code-module-limit 6 --snippet-chars 1000`
    - `--search-limit 6 --detail-limit 3`
-3) If the answer is still ambiguous, use the 3-layer memory tools in order:
+3) Coverage gate: if the answer lacks any of the following, do NOT guess:
+   - entrypoint/startup
+   - persistence/storage path
+   - main generation/processing flow
+   Do a second `codex-mem ask` with a narrower question (e.g. "entrypoint and persistence chain") and/or increase `--code-top-k`.
+4) If the answer is still ambiguous, use the 3-layer memory tools in order:
    - Layer 1: `mem-search "<missing topic>" --limit 8`
    - Layer 2: `timeline <top-id> --before 2 --after 2`
    - Layer 3: `get-observations <id1> <id2> <id3>`
-4) Read only the minimum number of files needed to confirm the top-level model (max 3).
+5) Read only the minimum number of files needed to confirm the top-level model (max 3).
 
 Output only:
 1. North star goal
@@ -119,6 +124,6 @@ After coding:
 
 ## Practical Rule of Thumb
 
-- Cold start: savings are moderate because code grounding still dominates.
-- Daily Q&A: savings are highest because retrieval can stay narrow and incremental.
-- Deep forensics: savings remain high, but drop when you intentionally pull many Layer-3 details.
+- Cold start: prioritize coverage gates (entrypoint + persistence + main flow) over completeness.
+- Daily Q&A: keep retrieval narrow; expand only when evidence is missing.
+- Deep forensics: intentionally pulling many Layer-3 details is fine, but always cite IDs and paths.

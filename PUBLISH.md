@@ -2,11 +2,14 @@
 
 ## Primary marketing hook (use this first line everywhere)
 
-`codex-mem cuts context tokens by 99.84% and reaches first memory context in ~60ms (median local benchmark).`
+`codex-mem cold-starts project grounding in ~422ms (first index build) / ~163ms warm, while cutting onboarding context by 94.71% vs a curated full-text pack (local benchmark).`
 
 Benchmark source:
-- `Documentation/benchmarks/marketing_claims_20260208.json`
-- Reproduce: `python3 Scripts/benchmark_marketing_claim.py --root . --out Documentation/benchmarks/marketing_claims_20260208.json`
+- Cold start pack vs `ask`: `Documentation/benchmarks/onboarding_pack_codex_mem_rich_20260211.json`
+- Warm daily memory: `Documentation/benchmarks/marketing_claims_20260211.json`
+- Reproduce:
+  - `python3 Scripts/benchmark_onboarding_pack.py ...`
+  - `python3 Scripts/benchmark_marketing_claim.py --root . --out Documentation/benchmarks/marketing_claims_20260211.json`
 
 ## Prerequisites
 
@@ -30,21 +33,21 @@ gh repo create codex-mem --public --source=. --remote=origin --push=false
 cd /ABS/PATH/codex-mem
 git remote set-url origin https://github.com/<YOUR_ORG_OR_USER>/codex-mem.git
 # recommended: use PAT once then store by credential helper
-git push -u origin codex/init
+git push -u origin main
 ```
 
 ## 3) If push auth fails, re-auth via GitHub CLI
 
 ```bash
 gh auth login
-git push -u origin codex/init
+git push -u origin main
 ```
 
 ## 4) Open PR (optional)
 
 ```bash
-# if main exists and you want PR from codex/init
-# https://github.com/<YOUR_ORG_OR_USER>/codex-mem/compare/main...codex/init
+# if you push from a feature branch:
+# https://github.com/<YOUR_ORG_OR_USER>/codex-mem/compare/main...<your-branch>
 ```
 
 ## 5) Distribution channels beyond GitHub and X

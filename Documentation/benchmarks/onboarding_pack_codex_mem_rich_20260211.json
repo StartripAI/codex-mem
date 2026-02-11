@@ -1,0 +1,52 @@
+{
+  "date": "2026-02-11",
+  "benchmark": "onboarding_pack_v1",
+  "target": {
+    "label": "codex-mem (this repo)",
+    "root_redacted": true
+  },
+  "question": "Learn this project: north star, architecture, module map, entrypoints, main flow, persistence/output, top risks.",
+  "baseline_pack": {
+    "file_count": 9,
+    "tokens_est_total": 58292,
+    "paths": [
+      "README.md",
+      "Documentation/ARCHITECTURE.md",
+      "Scripts/codex_mem.py",
+      "Scripts/repo_knowledge.py",
+      "Scripts/codex_mem_web.py",
+      "Scripts/codex_mem_mcp.py",
+      "Documentation/INSTALLATION.md",
+      "Documentation/MCP_TOOLS.md",
+      "Skills/codex-mem/SKILL.md"
+    ]
+  },
+  "ask": {
+    "cold": {
+      "tokens_est_total": 3086,
+      "time_ms": 421.824,
+      "index_refresh": {
+        "refreshed": true,
+        "reason": "missing_index",
+        "index_time_ms": 260.715
+      }
+    },
+    "warm": {
+      "tokens_est_total": 3086,
+      "time_ms": 163.386,
+      "index_refresh": {
+        "refreshed": false,
+        "reason": "up_to_date"
+      }
+    }
+  },
+  "savings": {
+    "context_saving_ratio": 0.9471,
+    "context_saving_percent": 94.71
+  },
+  "notes": [
+    "Token estimates use chars/4 heuristic (same estimator used in codex-mem CLI JSON).",
+    "Baseline pack is a curated set of full files a human might paste for onboarding.",
+    "`ask` output size includes both memory retrieval (if any) and repo grounding context."
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "scenario": {
+    "name": "marketing_default",
+    "sessions": 30,
+    "tool_events_per_session": 38,
+    "noise_chars": 65,
+    "chunks_per_event": 13,
+    "stage1_limit": 20,
+    "details_limit": 8,
+    "timeline_before": 4,
+    "timeline_after": 4,
+    "startup_samples": 5,
+    "seed": 19
+  },
+  "dataset": {
+    "project": "marketing-bench",
+    "events": 1230,
+    "observations": 120,
+    "total_items": 1350
+  },
+  "token": {
+    "naive_full_load": 379275,
+    "progressive_load": 596,
+    "layer1_tokens": 200,
+    "layer2_timeline_tokens": 260,
+    "layer3_detail_tokens": 136,
+    "saving_ratio": 0.9984,
+    "saving_percent": 99.84
+  },
+  "startup_ms": {
+    "stage1_time_to_first_context_samples": [
+      62.221,
+      63.179,
+      61.508,
+      59.862,
+      61.455
+    ],
+    "full_history_load_samples": [
+      81.534,
+      81.997,
+      80.692,
+      80.342,
+      81.866
+    ],
+    "stage1_median": 61.508,
+    "full_history_median": 81.534,
+    "speedup_x": 1.326
+  },
+  "query": {
+    "text": "how did we handle memory retrieval privacy and stream orchestrator issues",
+    "timeline_anchor": "O68"
+  }
+}

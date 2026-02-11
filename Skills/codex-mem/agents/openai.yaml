@@ -13,7 +13,7 @@ mcp:
         - --root
         - .
         - --project-default
-        - hopenote
+        - default
 tools:
   - mem_search
   - mem_nl_search

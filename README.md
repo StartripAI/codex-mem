@@ -1,12 +1,13 @@
 # codex-mem
 
-Cut context payload by **99.84%** and reach first memory context in **~67 ms** (median local benchmark).
+Cold-start project grounding in **~422 ms** (first index build) / **~163 ms** warm, while cutting onboarding context by **94.71%** vs a curated full-text pack (local benchmark).
 Codex-native persistent memory with progressive retrieval, local viewer UX, and MCP-ready integration.
 
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)
-![Token Savings](https://img.shields.io/badge/token_saving-99.84%25-16a34a)
-![Startup](https://img.shields.io/badge/startup_to_first_context-66.6ms-0ea5e9)
-![Startup Speedup](https://img.shields.io/badge/startup_speedup-1.34x-0891b2)
+![Onboarding Context](https://img.shields.io/badge/onboarding_context_reduction-94.71%25-16a34a)
+![Cold Start](https://img.shields.io/badge/cold_start_to_grounding-422ms-0ea5e9)
+![Warm Ask](https://img.shields.io/badge/warm_ask_to_grounding-163ms-0891b2)
+![Warm Memory](https://img.shields.io/badge/warm_memory_context_reduction-99.84%25-15803d)
 ![MCP](https://img.shields.io/badge/MCP-ready-0A7C66)
 ![Runtime](https://img.shields.io/badge/runtime-stable%20%7C%20beta-0f766e)
 ![Smoke Test](https://img.shields.io/badge/smoke_test-passing-16a34a)
@@ -16,21 +17,22 @@ Codex-native persistent memory with progressive retrieval, local viewer UX, and 
 [Quick Start](#quick-start) • [Prompt Playbook](Documentation/PROMPT_PLAYBOOK_EN.md) • [Comparison](#comparison-table) • [Release Notes](RELEASE_NOTES.md) • [Docs](Documentation/CODEX_MEM.md)
 
 Benchmark source:
-- Latest: [`Documentation/benchmarks/marketing_claims_20260210.json`](Documentation/benchmarks/marketing_claims_20260210.json)
-- Reproduce: `python3 Scripts/benchmark_marketing_claim.py --root . --out Documentation/benchmarks/marketing_claims_20260210.json`
-- Notes: [`Documentation/benchmarks/MEASURED_SAVINGS_20260210.md`](Documentation/benchmarks/MEASURED_SAVINGS_20260210.md)
+- Cold start (onboarding pack vs `ask`): [`Documentation/benchmarks/onboarding_pack_codex_mem_rich_20260211.json`](Documentation/benchmarks/onboarding_pack_codex_mem_rich_20260211.json)
+- Warm daily memory (progressive retrieval): [`Documentation/benchmarks/marketing_claims_20260211.json`](Documentation/benchmarks/marketing_claims_20260211.json)
+- Repo grounding (prompt vs full corpus): [`Documentation/benchmarks/repo_onboarding_codex_mem_20260211.json`](Documentation/benchmarks/repo_onboarding_codex_mem_20260211.json)
+- Notes: [`Documentation/benchmarks/MEASURED_SAVINGS_20260211.md`](Documentation/benchmarks/MEASURED_SAVINGS_20260211.md)
 
-Scenario savings (2026-02-10):
-- Cold start (lean): **63.98%** token saving
-- Cold start (deeper context): **72.90%** token saving
-- Daily Q&A (standard): **99.84%** token saving
-- Daily Q&A (deep retrieval): **99.70%** token saving
-- Incident forensics (wide detail pull): **88.97%** token saving
-- Full matrix: [`Documentation/benchmarks/scenario_savings_20260210.json`](Documentation/benchmarks/scenario_savings_20260210.json)
+Scenario savings (2026-02-11):
+- Cold start (lean): **61.70%** context reduction
+- Cold start (deeper context): **72.62%** context reduction
+- Daily Q&A (standard): **99.84%** context reduction
+- Daily Q&A (deep retrieval): **99.69%** context reduction
+- Incident forensics (wide detail pull): **88.97%** context reduction
+- Full matrix: [`Documentation/benchmarks/scenario_savings_20260211.json`](Documentation/benchmarks/scenario_savings_20260211.json)
 
-Repo onboarding snapshot (2026-02-10):
-- This repo grounding (aggregate-only): **97.15%** context reduction
-- Source: [`Documentation/benchmarks/repo_onboarding_codex_mem_20260210.json`](Documentation/benchmarks/repo_onboarding_codex_mem_20260210.json)
+Repo onboarding snapshot (2026-02-11):
+- This repo grounding (aggregate-only): **97.76%** context reduction
+- Source: [`Documentation/benchmarks/repo_onboarding_codex_mem_20260211.json`](Documentation/benchmarks/repo_onboarding_codex_mem_20260211.json)
 
 ## Why codex-mem
 
@@ -39,7 +41,7 @@ Most coding assistants lose operational memory between sessions.
 
 North star:
 - less repeated explanation
-- less wasted context tokens
+- less wasted context payload
 - more accurate follow-up reasoning from real prior work
 
 ## Launch Asset Production Kit

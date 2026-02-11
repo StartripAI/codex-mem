@@ -360,6 +360,62 @@ def git_read_stdout(root: pathlib.Path, args: List[str]) -> str:
         return ""
 
 
+GIT_STATUS_IGNORE_PREFIXES = (
+    ".codex_knowledge",
+    ".codex_mem",
+)
+
+
+def _is_ignored_git_status_path(path: str) -> bool:
+    raw = (path or "").strip()
+    if not raw:
+        return False
+    # Normalize leading "./" so comparisons are stable.
+    while raw.startswith("./"):
+        raw = raw[2:]
+    for prefix in GIT_STATUS_IGNORE_PREFIXES:
+        if raw == prefix or raw.startswith(prefix + "/"):
+            return True
+    return False
+
+
+def git_status_porcelain_filtered(root: pathlib.Path) -> str:
+    """
+    Return `git status --porcelain` output, filtered to ignore codex-mem generated dirs.
+
+    Important: we keep the raw line endings stable so the hash matches what repo_knowledge writes.
+    """
+    try:
+        proc = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        status = proc.stdout or ""
+    except Exception:
+        return ""
+
+    if not status:
+        return ""
+
+    kept: List[str] = []
+    for line in status.splitlines(True):  # keepends=True
+        # Porcelain v1 format: XY<space>path
+        path_part = line[3:].strip() if len(line) >= 4 else ""
+        if not path_part:
+            kept.append(line)
+            continue
+
+        # Rename/copy format: "old -> new"
+        candidates = [p.strip() for p in path_part.split(" -> ")] if " -> " in path_part else [path_part]
+        if candidates and all(_is_ignored_git_status_path(p) for p in candidates if p):
+            continue
+        kept.append(line)
+    return "".join(kept)
+
+
 def repo_knowledge_needs_refresh(root: pathlib.Path, db_path: pathlib.Path) -> Tuple[bool, str, Dict[str, str]]:
     """
     Determine whether repo_knowledge index likely needs a rebuild.
@@ -384,8 +440,8 @@ def repo_knowledge_needs_refresh(root: pathlib.Path, db_path: pathlib.Path) -> T
         if head_now and not head_index:
             return True, "missing_git_head_in_meta", meta
 
-        status = git_read_stdout(root, ["status", "--porcelain"])
-        if status:
+        status = git_status_porcelain_filtered(root)
+        if status.strip():
             status_hash_now = hashlib.blake2b(status.encode("utf-8"), digest_size=16).hexdigest()
             status_hash_index = (meta.get("git_status_hash", "") or "").strip()
             if status_hash_index and status_hash_index == status_hash_now:

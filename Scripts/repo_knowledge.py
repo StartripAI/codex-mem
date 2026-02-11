@@ -516,6 +516,44 @@ def effective_query_for_retrieval(query: str) -> Tuple[str, Dict[str, object]]:
 
 DOC_EXTENSIONS = {".md", ".rst", ".txt"}
 
+GIT_STATUS_IGNORE_PREFIXES = (
+    ".codex_knowledge",
+    ".codex_mem",
+)
+
+
+def _is_ignored_git_status_path(path: str) -> bool:
+    raw = (path or "").strip()
+    if not raw:
+        return False
+    while raw.startswith("./"):
+        raw = raw[2:]
+    for prefix in GIT_STATUS_IGNORE_PREFIXES:
+        if raw == prefix or raw.startswith(prefix + "/"):
+            return True
+    return False
+
+
+def filter_git_status_porcelain(status: str) -> str:
+    """
+    Filter `git status --porcelain` output to ignore codex-mem generated index dirs.
+
+    We preserve raw newlines so hashes match between `repo_knowledge` and `codex_mem`.
+    """
+    if not status:
+        return ""
+    kept: List[str] = []
+    for line in status.splitlines(True):  # keepends=True
+        path_part = line[3:].strip() if len(line) >= 4 else ""
+        if not path_part:
+            kept.append(line)
+            continue
+        candidates = [p.strip() for p in path_part.split(" -> ")] if " -> " in path_part else [path_part]
+        if candidates and all(_is_ignored_git_status_path(p) for p in candidates if p):
+            continue
+        kept.append(line)
+    return "".join(kept)
+
 
 def is_doc_path(path: str) -> bool:
     try:
@@ -1422,7 +1460,7 @@ def build_index(args: argparse.Namespace) -> int:
                 text=True,
                 check=True,
             )
-            git_status = proc.stdout
+            git_status = filter_git_status_porcelain(proc.stdout or "")
         except Exception:
             git_status = ""
         if git_status.strip():

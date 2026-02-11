@@ -1,5 +1,31 @@
 # Release Notes
 
+## v0.3.5 - 2026-02-11
+
+### Added
+- onboarding pack benchmark (curated full-file pack vs `ask`):
+  - `Scripts/benchmark_onboarding_pack.py`
+  - `Documentation/benchmarks/onboarding_pack_codex_mem_rich_20260211.json`
+- measured savings write-up:
+  - `Documentation/benchmarks/MEASURED_SAVINGS_20260211.md`
+
+### Changed
+- repo grounding refresh guard:
+  - stable `git_status_hash` comparison (no newline mismatch)
+  - ignore codex-generated dirs (`.codex_knowledge*`, `.codex_mem`) in git-status hashing
+- updated README first-screen hook + badges to emphasize cold start onboarding metrics
+- updated prompt playbook (coverage gates; removed token-first language)
+- removed project-specific references from demo data + skill agent defaults
+- refreshed benchmark snapshots:
+  - `Documentation/benchmarks/marketing_claims_20260211.json`
+  - `Documentation/benchmarks/scenario_savings_20260211.json`
+  - `Documentation/benchmarks/repo_onboarding_codex_mem_20260211.json`
+
+### Validation
+- passed: `python3 Scripts/codex_mem_smoketest.py --root .`
+- passed: `python3 Scripts/benchmark_marketing_claim.py --root .`
+- passed: `python3 Scripts/benchmark_scenario_savings.py --root .`
+
 ## v0.3.4 - 2026-02-10
 
 ### Added

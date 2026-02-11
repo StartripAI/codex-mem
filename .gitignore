@@ -2,4 +2,6 @@ __pycache__/
 *.pyc
 .codex_mem/
 .codex_knowledge/
+.codex_mem_bench/
+.codex_knowledge_bench*/
 .DS_Store

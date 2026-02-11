@@ -10,7 +10,7 @@
     {
       "tool_name": "shell",
       "title": "Locate orchestrator actor",
-      "content": "grep -n 'HomeStreamOrchestrator' App/HopeNoteApp/Features/Home/HomeViewModel.swift",
+      "content": "rg -n \"HomeStreamOrchestrator\" App/MyApp/Features/Home/HomeViewModel.swift",
       "tags": ["streaming", "architecture"]
     },
     {

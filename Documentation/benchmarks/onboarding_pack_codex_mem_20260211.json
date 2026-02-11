@@ -1,0 +1,35 @@
+{
+  "date": "2026-02-11",
+  "benchmark": "onboarding_pack_v1",
+  "target": {
+    "label": "codex-mem (this repo)",
+    "root_redacted": true
+  },
+  "question": "Learn this project: north star, architecture, module map, entrypoints, main flow, persistence/output, top risks.",
+  "baseline_pack": {
+    "file_count": 2,
+    "tokens_est_total": 3545,
+    "paths": [
+      "README.md",
+      "Documentation/ARCHITECTURE.md"
+    ]
+  },
+  "ask": {
+    "tokens_est_total": 3086,
+    "time_ms": 530.937,
+    "index_refresh": {
+      "refreshed": true,
+      "reason": "git_status_changed",
+      "index_time_ms": 316.061
+    }
+  },
+  "savings": {
+    "context_saving_ratio": 0.1295,
+    "context_saving_percent": 12.95
+  },
+  "notes": [
+    "Token estimates use chars/4 heuristic (same estimator used in codex-mem CLI JSON).",
+    "Baseline pack is a curated set of full files a human might paste for onboarding.",
+    "`ask` output size includes both memory retrieval (if any) and repo grounding context."
+  ]
+}
