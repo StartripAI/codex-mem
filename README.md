@@ -1,148 +1,65 @@
 # codex-mem
 
-Cold-start project grounding in **~422 ms** (first index build) / **~163 ms** warm, while cutting onboarding context by **94.71%** vs a curated full-text pack (local benchmark).
-Codex-native persistent memory with progressive retrieval, local viewer UX, and MCP-ready integration.
+`codex-mem` gives Codex persistent project memory so each new session starts with evidence, not re-explaining everything.
 
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)
-![Onboarding Context](https://img.shields.io/badge/onboarding_context_reduction-94.71%25-16a34a)
-![Cold Start](https://img.shields.io/badge/cold_start_to_grounding-422ms-0ea5e9)
-![Warm Ask](https://img.shields.io/badge/warm_ask_to_grounding-163ms-0891b2)
-![Warm Memory](https://img.shields.io/badge/warm_memory_context_reduction-99.84%25-15803d)
 ![MCP](https://img.shields.io/badge/MCP-ready-0A7C66)
-![Runtime](https://img.shields.io/badge/runtime-stable%20%7C%20beta-0f766e)
+![Prompt Compaction](https://img.shields.io/badge/compact_prompt-53.28%25_less_tokens-16a34a)
 ![Smoke Test](https://img.shields.io/badge/smoke_test-passing-16a34a)
-![Local First](https://img.shields.io/badge/storage-local--first-334155)
-![License](https://img.shields.io/badge/license-not%20set-lightgrey)
 
-[Quick Start](#quick-start) • [Prompt Playbook](Documentation/PROMPT_PLAYBOOK_EN.md) • [Comparison](#comparison-table) • [Release Notes](RELEASE_NOTES.md) • [Docs](Documentation/CODEX_MEM.md)
+[Quick Start](#quick-start) • [Prompt Playbook](Documentation/PROMPT_PLAYBOOK_EN.md) • [Architecture](Documentation/ARCHITECTURE.md) • [MCP Tools](Documentation/MCP_TOOLS.md) • [Benchmarks](BENCHMARKS.md) • [Release Notes](RELEASE_NOTES.md)
 
-Benchmark source:
-- Cold start (onboarding pack vs `ask`): [`Documentation/benchmarks/onboarding_pack_codex_mem_rich_20260211.json`](Documentation/benchmarks/onboarding_pack_codex_mem_rich_20260211.json)
-- Warm daily memory (progressive retrieval): [`Documentation/benchmarks/marketing_claims_20260211.json`](Documentation/benchmarks/marketing_claims_20260211.json)
-- Repo grounding (prompt vs full corpus): [`Documentation/benchmarks/repo_onboarding_codex_mem_20260211.json`](Documentation/benchmarks/repo_onboarding_codex_mem_20260211.json)
-- Prompt compaction (compact vs legacy): [`Documentation/benchmarks/prompt_compaction_20260211.json`](Documentation/benchmarks/prompt_compaction_20260211.json)
-- Notes: [`Documentation/benchmarks/MEASURED_SAVINGS_20260211.md`](Documentation/benchmarks/MEASURED_SAVINGS_20260211.md)
+## Why This Exists
 
-Scenario savings (2026-02-11):
-- Cold start (lean): **61.70%** context reduction
-- Cold start (deeper context): **72.62%** context reduction
-- Daily Q&A (standard): **99.84%** context reduction
-- Daily Q&A (deep retrieval): **99.69%** context reduction
-- Incident forensics (wide detail pull): **88.97%** context reduction
-- Full matrix: [`Documentation/benchmarks/scenario_savings_20260211.json`](Documentation/benchmarks/scenario_savings_20260211.json)
+Without memory, Codex workflows degrade over time:
+- repeated context dumping
+- higher token spend
+- weaker follow-up accuracy
 
-Repo onboarding snapshot (2026-02-11):
-- This repo grounding (aggregate-only): **97.76%** context reduction
-- Source: [`Documentation/benchmarks/repo_onboarding_codex_mem_20260211.json`](Documentation/benchmarks/repo_onboarding_codex_mem_20260211.json)
+`codex-mem` solves this with local-first lifecycle capture + progressive retrieval + repository grounding.
 
-Prompt compaction snapshot (2026-02-11):
-- Compact mode: **1495 tokens** estimated
-- Legacy mode: **3200 tokens** estimated
-- Reduction: **53.28%**
-- Source: [`Documentation/benchmarks/prompt_compaction_20260211.json`](Documentation/benchmarks/prompt_compaction_20260211.json)
+## What You Get
 
-## Why codex-mem
+1. Cross-session memory with SQLite + FTS + deterministic vectors.
+2. Progressive retrieval pipeline:
+   - Layer 1: `search` / `mem-search`
+   - Layer 2: `timeline`
+   - Layer 3: `get-observations`
+3. `ask` that fuses memory evidence with live repo evidence.
+4. Built-in compact prompt system (default):
+   - profile mapping (`onboarding`, `daily_qa`, `bug_triage`, `implementation`)
+   - onboarding coverage gate (`entrypoint`, `persistence`, `ai_generation`)
+   - token budgeting + compact rendering
 
-Most coding assistants lose operational memory between sessions.  
-`codex-mem` makes new Codex sessions feel continuous by capturing lifecycle evidence, retrieving context progressively, and fusing memory with live repository facts.
+## Measured Impact (2026-02-11)
 
-North star:
-- less repeated explanation
-- less wasted context payload
-- more accurate follow-up reasoning from real prior work
+| Metric | Result | Source |
+|---|---:|---|
+| Onboarding pack vs `ask` context | 94.71% reduction | [`Documentation/benchmarks/onboarding_pack_codex_mem_rich_20260211.json`](Documentation/benchmarks/onboarding_pack_codex_mem_rich_20260211.json) |
+| Repo grounding vs full corpus | 97.76% reduction | [`Documentation/benchmarks/repo_onboarding_codex_mem_20260211.json`](Documentation/benchmarks/repo_onboarding_codex_mem_20260211.json) |
+| Daily Q&A context savings | 99.84% reduction | [`Documentation/benchmarks/marketing_claims_20260211.json`](Documentation/benchmarks/marketing_claims_20260211.json) |
+| Compact prompt vs legacy prompt | 53.28% fewer tokens | [`Documentation/benchmarks/prompt_compaction_20260211.json`](Documentation/benchmarks/prompt_compaction_20260211.json) |
 
-## Launch Asset Production Kit
+More detail:
+- scenario matrix: [`Documentation/benchmarks/scenario_savings_20260211.json`](Documentation/benchmarks/scenario_savings_20260211.json)
+- methodology notes: [`Documentation/benchmarks/MEASURED_SAVINGS_20260211.md`](Documentation/benchmarks/MEASURED_SAVINGS_20260211.md)
 
-- Playbook: [`Documentation/LAUNCH_ASSET_PLAYBOOK.md`](Documentation/LAUNCH_ASSET_PLAYBOOK.md)
-- Asset root: [`Assets/LaunchKit/README.md`](Assets/LaunchKit/README.md)
-- GIF shotlist template: [`Assets/LaunchKit/gif/spec/SHOTLIST_TEMPLATE.md`](Assets/LaunchKit/gif/spec/SHOTLIST_TEMPLATE.md)
-- PRD screenshot copy template: [`Assets/LaunchKit/screenshots/prd-copy/PRD_SCREENSHOT_COPY_TEMPLATE.md`](Assets/LaunchKit/screenshots/prd-copy/PRD_SCREENSHOT_COPY_TEMPLATE.md)
+## 60-Second Start
 
-## Core Capabilities
+```bash
+bash Scripts/codex_mem.sh init --project demo
+bash Scripts/codex_mem.sh ask "learn this repo: architecture, entrypoint, persistence, top risks" --project demo
+```
 
-### Lifecycle capture
-- five hooks:
-  - `session-start`
-  - `user-prompt-submit`
-  - `post-tool-use`
-  - `stop`
-  - `session-end`
-- automatic session summary observations at close
+Default `ask` behavior:
+- `--prompt-style compact`
+- `--mapping-fallback auto`
 
-### Progressive disclosure retrieval
-- Layer 1: `search` / `mem-search` (compact shortlist)
-- Layer 2: `timeline` (temporal neighborhood)
-- Layer 3: `get-observations` (full details by selected IDs)
+For regression comparison:
 
-### Fused memory + code grounding
-- `ask` combines memory shortlist with code context from `repo_knowledge.py`
-- built-in prompt mapping + compaction keeps context short without requiring long user prompt templates
-
-### Built-in Prompt Strategy (Compact by Default)
-
-`ask` now runs a fixed internal pipeline:
-- profile mapping (`onboarding` / `daily_qa` / `bug_triage` / `implementation`)
-- retrieval + onboarding coverage gate (`entrypoint`, `persistence`, `ai_generation`)
-- token budgeting (default target: ~1800 prompt tokens)
-- compact prompt rendering (default) or legacy rendering (for regression)
-
-You can control behavior with:
-- `--prompt-style {compact,legacy}` (default: `compact`)
-- `--mapping-fallback {auto,off}` (default: `auto`)
-- `--mapping-debug` (include full profile score details)
-
-JSON output keeps compatibility and adds:
-- `suggested_prompt`, `token_estimate` (existing fields preserved)
-- `mapping_decision`, `coverage_gate`, `prompt_plan`, `prompt_metrics` (new fields)
-
-### UX and operations
-- built-in natural-language search (`nl-search` / `mem-search`)
-- local web viewer (stream, summary, search, config)
-- runtime channel config (`stable` / `beta`)
-- endless-mode style auto-compaction in beta
-- dual-tag privacy model (`--tag`, `--privacy-tag`)
-
-### Codex integrations
-- MCP server with `mem_*` tools
-- skill package for reusable retrieval workflow
-- CLI wrapper for repeatable operations
-
-## Comparison Table
-
-| Capability | codex-mem | Basic session-only chat memory | Codex-Mem target parity with Claude-Mem-style workflow |
-|---|---|---|---|
-| Cross-session persistence | ✅ Local SQLite + FTS + vectors | ❌ | ✅ |
-| 3-layer progressive retrieval | ✅ | ❌ | ✅ |
-| Natural-language memory query | ✅ `mem-search` | ❌ | ✅ |
-| Real-time local web viewer | ✅ | ❌ | ✅ |
-| Stable/Beta runtime switch | ✅ | ❌ | ✅ |
-| Endless-style compaction mode | ✅ (beta) | ❌ | ✅ |
-| Dual-tag privacy controls | ✅ semantic + policy tags | ❌ | ✅ |
-| MCP tool surface for Codex | ✅ | ❌ | ✅ |
-| Smoke-testable install validation | ✅ | ❌ | ✅ |
-
-## What’s New (Latest)
-
-See full history in [RELEASE_NOTES.md](RELEASE_NOTES.md).
-
-Highlights in `v0.3.0`:
-- launch asset production toolkit (`Assets/LaunchKit/`)
-- CI asset gate (`.github/workflows/asset-gate.yml`)
-- mem export surface (`export-session`, `mem_export_session`)
-- web viewer upgrades (PRD caption copy + recording guide mode)
-- launch automation scripts (`make_gifs`, `validate_assets`, `social_pack`, `snapshot_docs`)
-- benchmark + roadmap + compatibility + security documentation set
-
-## Release Rhythm Template
-
-Every release batch follows one fixed package:
-- Release Notes update
-- 3 GIFs (`gif_01`, `gif_02`, `gif_03`)
-- 3 final screenshots
-- 1 comparison table update in README
-
-Reference:
-- [`Documentation/RELEASE_RHYTHM.md`](Documentation/RELEASE_RHYTHM.md)
+```bash
+python3 Scripts/codex_mem.py --root . ask "same question" --project demo --prompt-style legacy
+```
 
 ## Quick Start
 
