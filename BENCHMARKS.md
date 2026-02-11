@@ -65,6 +65,21 @@ This benchmarks `codex-mem ask` against a curated onboarding pack (a set of full
 - Cold `ask` (index missing): `~422 ms`
 - Warm `ask` (index up-to-date): `~163 ms`
 
+## Prompt Compaction Snapshot (2026-02-11)
+
+This benchmark compares `ask --prompt-style compact` vs `ask --prompt-style legacy` using the same question and retrieval limits.
+
+- Source: `Documentation/benchmarks/prompt_compaction_20260211.json`
+- Compact prompt: `1495` tokens estimated
+- Legacy prompt: `3200` tokens estimated
+- Token reduction vs legacy: `53.28%`
+- Runs: `3`
+
+Reproduce:
+
+```bash
+python3 Scripts/benchmark_prompt_compaction.py --root . --runs 3 --out Documentation/benchmarks/prompt_compaction_20260211.json
+```
 
 ## Scenario Savings Snapshot (2026-02-11)
 

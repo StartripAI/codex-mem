@@ -1,0 +1,22 @@
+name: Domain Isolation
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  domain-isolation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run domain isolation check
+        run: python3 Scripts/check_domain_isolation.py --root .

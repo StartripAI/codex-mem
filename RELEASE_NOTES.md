@@ -1,5 +1,43 @@
 # Release Notes
 
+## v0.3.6 - 2026-02-11
+
+### Added
+- built-in prompt architecture modules:
+  - `Scripts/prompt_profiles.py`
+  - `Scripts/prompt_mapper.py`
+  - `Scripts/prompt_budgeter.py`
+  - `Scripts/prompt_renderer.py`
+- domain isolation guardrails:
+  - `Scripts/check_domain_isolation.py`
+  - `.github/workflows/domain-isolation.yml`
+- prompt compaction benchmark:
+  - `Scripts/benchmark_prompt_compaction.py`
+  - `Documentation/benchmarks/prompt_compaction_20260211.json`
+- new tests for mapper/budgeter:
+  - `Scripts/tests/test_prompt_mapper.py`
+  - `Scripts/tests/test_prompt_budgeter.py`
+
+### Changed
+- `ask` now defaults to compact prompt style with profile-driven routing and budgeting:
+  - new flags: `--prompt-style`, `--mapping-fallback`, `--mapping-debug`
+  - onboarding coverage gate now enforces `entrypoint`, `persistence`, `ai_generation`
+  - output now includes `mapping_decision`, `coverage_gate`, `prompt_plan`, `prompt_metrics`
+- `mem_ask` MCP schema/bridge updated to support:
+  - `prompt_style`, `mapping_fallback`, `mapping_debug`
+- docs updated to reflect short-input strategy and new architecture:
+  - `README.md`
+  - `Documentation/PROMPT_PLAYBOOK_EN.md`
+  - `Documentation/ARCHITECTURE.md`
+  - `Documentation/MCP_TOOLS.md`
+  - `BENCHMARKS.md`
+
+### Validation
+- passed: `python3 Scripts/check_domain_isolation.py --root .`
+- passed: `python3 -m unittest Scripts/tests/test_prompt_mapper.py Scripts/tests/test_prompt_budgeter.py`
+- passed: `python3 Scripts/codex_mem_smoketest.py --root .`
+- passed: `python3 Scripts/benchmark_prompt_compaction.py --root . --runs 3`
+
 ## v0.3.5 - 2026-02-11
 
 ### Added

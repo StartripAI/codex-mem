@@ -176,6 +176,9 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
             "alpha": {"type": "number", "minimum": 0.0, "maximum": 1.0},
             "include_private": {"type": "boolean"},
             "snippet_chars": {"type": "integer", "minimum": 32, "maximum": 8000},
+            "prompt_style": {"type": "string", "enum": ["compact", "legacy"]},
+            "mapping_fallback": {"type": "string", "enum": ["auto", "off"]},
+            "mapping_debug": {"type": "boolean"},
             "prompt_only": {"type": "boolean"},
         },
         ["question"],
@@ -437,6 +440,12 @@ class CodexMemMCPServer:
                 cmd.append("--include-private")
             if arguments.get("snippet_chars") is not None:
                 cmd.extend(["--snippet-chars", str(int(arguments["snippet_chars"]))])
+            if arguments.get("prompt_style"):
+                cmd.extend(["--prompt-style", str(arguments["prompt_style"])])
+            if arguments.get("mapping_fallback"):
+                cmd.extend(["--mapping-fallback", str(arguments["mapping_fallback"])])
+            if bool(arguments.get("mapping_debug")):
+                cmd.append("--mapping-debug")
             if bool(arguments.get("prompt_only")):
                 cmd.append("--prompt-only")
                 return self.text_content(self.run_cli(cmd, expect_json=False))

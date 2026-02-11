@@ -2,102 +2,84 @@
 
 ## System Overview
 
-`codex-mem` is a local-first memory system for Codex with four planes:
+`codex-mem` is a local-first memory system with four planes:
+1. capture plane (lifecycle write path)
+2. retrieval plane (search/timeline/get-observations)
+3. ask orchestration plane (mapping, coverage, budgeting, rendering)
+4. integration plane (MCP + web APIs)
 
-1. **Capture plane**: lifecycle hooks persist session evidence
-2. **Retrieval plane**: progressive search/timeline/detail retrieval
-3. **Integration plane**: MCP tools + Skill workflow
-4. **UX plane**: local web viewer with runtime mode controls
+## Ask Pipeline (Current)
+
+`ask` in `Scripts/codex_mem.py` executes:
+1. natural-language parse (`parse_natural_query`)
+2. prompt profile mapping (`prompt_mapper.py`)
+3. profile defaults application (`prompt_profiles.py`)
+4. memory retrieval (Layer 1 + Layer 3 detail pull)
+5. repo retrieval (`repo_knowledge.py`)
+6. coverage gate for onboarding profile (`entrypoint`, `persistence`, `ai_generation`)
+7. prompt budgeting (`prompt_budgeter.py`)
+8. rendering (`prompt_renderer.py` for compact or legacy renderer fallback)
+
+```mermaid
+flowchart TD
+  A["User Question"] --> B["Natural Query Parse"]
+  B --> C["Prompt Mapper (rule first, optional LLM fallback)"]
+  C --> D["Profile Defaults"]
+  D --> E["Memory Retrieval (L1 + L3)"]
+  D --> F["Repo Retrieval"]
+  E --> G["Coverage Gate (onboarding only)"]
+  F --> G
+  G --> H["Prompt Budgeter"]
+  H --> I["Prompt Renderer (compact/legacy)"]
+  I --> J["ask JSON Output"]
+```
 
 ## Core Modules
 
 - `Scripts/codex_mem.py`
-  - DB schema and persistence
-  - retrieval ranking and progressive disclosure logic
-  - natural-language query parsing
-  - runtime config and privacy policy handling
-  - fused memory + code retrieval (`ask`)
-
-- `Scripts/codex_mem_mcp.py`
-  - MCP transport/protocol
-  - tool schemas and validation
-  - CLI bridge for `mem_*` tools
-
-- `Scripts/codex_mem_web.py`
-  - local HTTP API + SPA viewer
-  - stream/session/search endpoints
-  - stable/beta runtime configuration controls
-
+  - CLI entrypoint and DB operations
+  - fused ask orchestration and output assembly
+- `Scripts/prompt_profiles.py`
+  - profile registry, defaults, coverage requirements, budget ratios
+- `Scripts/prompt_mapper.py`
+  - rule scoring + optional OpenAI fallback routing
+- `Scripts/prompt_budgeter.py`
+  - evidence dedupe, token estimation, budgeted evidence selection
+- `Scripts/prompt_renderer.py`
+  - compact prompt section renderer
 - `Scripts/repo_knowledge.py`
-  - repository indexing/query for fused ask context
+  - code indexing and repo evidence retrieval
+- `Scripts/codex_mem_mcp.py`
+  - MCP schema + CLI bridging for mem tools
 
-## Data Flow
+## Data Stores
 
-1. Lifecycle command writes event into SQLite.
-2. Event text is indexed in FTS and vectorized locally.
-3. `session-end` compiles session summary observations.
-4. `export-session` emits anonymized shareable JSON packages.
-4. Retrieval path:
-   - Layer 1 (`search` or `nl-search`)
-   - Layer 2 (`timeline`)
-   - Layer 3 (`get-observations`)
-5. `ask` fuses memory shortlist with repository code context.
-6. MCP/Web surfaces expose the same underlying engine.
+- SQLite (`.codex_mem/memory.db`)
+  - `sessions`, `events`, `observations`, FTS tables, `meta`
+- local repo index (`.codex_knowledge` by default)
 
-## Storage Schema
+## Coverage Gate Design
 
-Main tables:
-- `meta`
-- `sessions`
-- `events`
-- `observations`
-- `events_fts`
-- `observations_fts`
+Coverage gate is profile-aware:
+- enforced categories only for `onboarding`
+- missing categories trigger narrow second-pass repo probes
+- if still missing, output flags incomplete state explicitly (`coverage_gate.pass=false`)
 
-Runtime config in `meta`:
-- `channel` (`stable`/`beta`)
-- `viewer_refresh_sec`
-- `beta_endless_mode`
+This prevents falsely complete summaries when evidence is insufficient.
 
-Privacy metadata per record in `metadata_json`:
-- visibility (`public`/`private`)
-- policy tags
-- redaction flag
+## Output Contract (ask)
 
-## Ranking Model
+Core payload:
+- `layer1_search`, `layer3_observations`, `repo_context`
+- `suggested_prompt`, `token_estimate`
 
-- Lexical score: FTS5 BM25-derived normalization
-- Semantic score: local deterministic hash vector cosine similarity
-- Blended score: `alpha * lexical + (1-alpha) * semantic`
+New decision/quality payload:
+- `mapping_decision`
+- `coverage_gate`
+- `prompt_plan`
+- `prompt_metrics`
 
-Natural-language queries additionally apply:
-- lightweight time phrase parsing
-- intent keyword post-filtering
+## Isolation and CI Guard
 
-## Compaction Model
-
-Tool output compaction keeps:
-- head snippet
-- signal lines (errors/warnings/failures/etc.)
-- tail snippet
-
-Modes:
-- `stable`: compaction only when requested
-- `beta` + endless mode: auto-compaction for post-tool-use writes
-
-## Privacy Model (Dual Tags)
-
-- semantic tags (`--tag`): search taxonomy and retrieval hints
-- privacy tags (`--privacy-tag`): policy controls
-  - block write
-  - private visibility
-  - redaction
-
-Default retrieval excludes private records unless explicitly requested.
-
-## MCP Surface
-
-Tool categories:
-- retrieval: `mem_search`, `mem_nl_search`, `mem_timeline`, `mem_get_observations`, `mem_ask`, `mem_export_session`
-- runtime config: `mem_config_get`, `mem_config_set`
-- lifecycle: session and tool hook operations
+- `Scripts/check_domain_isolation.py` blocks banned cross-domain terms.
+- `.github/workflows/domain-isolation.yml` runs this check on PR/push.

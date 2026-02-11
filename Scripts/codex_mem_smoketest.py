@@ -370,7 +370,22 @@ def run_smoke(root: pathlib.Path) -> Dict[str, Any]:
             mcp_get = mcp_tool(proc, 7, "mem_get_observations", {"ids": [first_id]})
             if int(mcp_get.get("count", 0)) < 1:
                 raise RuntimeError("MCP mem_get_observations returned no items")
-            mcp_export = mcp_tool(proc, 8, "mem_export_session", {"session_id": "s1"})
+            mcp_ask = mcp_tool(
+                proc,
+                8,
+                "mem_ask",
+                {
+                    "question": "Learn this project architecture quickly",
+                    "prompt_style": "compact",
+                    "mapping_fallback": "off",
+                },
+            )
+            for key in ("mapping_decision", "coverage_gate", "prompt_plan", "prompt_metrics", "suggested_prompt"):
+                if key not in mcp_ask:
+                    raise RuntimeError(f"MCP mem_ask missing key: {key}")
+            if not str(mcp_ask.get("suggested_prompt", "")).strip():
+                raise RuntimeError("MCP mem_ask suggested_prompt is empty")
+            mcp_export = mcp_tool(proc, 9, "mem_export_session", {"session_id": "s1"})
             if not mcp_export.get("events"):
                 raise RuntimeError("MCP mem_export_session returned empty export")
         finally:

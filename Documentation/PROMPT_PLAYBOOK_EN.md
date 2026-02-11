@@ -1,129 +1,99 @@
 # Prompt Playbook (English)
 
-Use these copy-ready prompts in any project. They enforce codex-mem's **progressive disclosure retrieval** (Layer 1 shortlist → Layer 2 timeline → Layer 3 details) and **evidence-first gating** (only pull more context when the current evidence is insufficient).
+This playbook is for **short user prompts**. `codex-mem` handles routing and prompt shaping internally, so users do not need long template instructions.
 
-## Case 1: Cold Start (learn project, then wait for questions)
+## Default Behavior
 
-```text
-Cold start this project with codex-mem, then switch to Q&A standby.
+`ask` now defaults to `--prompt-style compact` and runs:
+1. prompt-to-profile mapping (`onboarding`, `daily_qa`, `bug_triage`, `implementation`)
+2. memory + repo retrieval
+3. onboarding coverage gate (`entrypoint`, `persistence`, `ai_generation`)
+4. token budgeting + compact rendering
 
-Constraints:
-- Do not modify code
-- Do not generate any report files
-- Do not print exploration logs (no explored/list/search progress chatter)
+Useful controls:
+- `--prompt-style {compact,legacy}`
+- `--mapping-fallback {auto,off}`
+- `--mapping-debug`
 
-Workflow (strict order):
-1) Confirm command entrypoint (codex_mem.sh or codex_mem.py).
-2) Run `codex-mem ask` with:
-   - question: "Learn this project: north star, architecture, module map, entrypoints, main flow, persistence/output, top risks."
-   - `--code-top-k 10 --code-module-limit 6 --snippet-chars 1000`
-   - `--search-limit 6 --detail-limit 3`
-3) Coverage gate: if the answer lacks any of the following, do NOT guess:
-   - entrypoint/startup
-   - persistence/storage path
-   - main generation/processing flow
-   Do a second `codex-mem ask` with a narrower question (e.g. "entrypoint and persistence chain") and/or increase `--code-top-k`.
-4) If the answer is still ambiguous, use the 3-layer memory tools in order:
-   - Layer 1: `mem-search "<missing topic>" --limit 8`
-   - Layer 2: `timeline <top-id> --before 2 --after 2`
-   - Layer 3: `get-observations <id1> <id2> <id3>`
-5) Read only the minimum number of files needed to confirm the top-level model (max 3).
+## Minimal User Inputs (Recommended)
 
-Output only:
-1. North star goal
-2. Module map
-3. Main flow (entry -> processing -> persistence/output)
-4. Top 3 technical risks with evidence (path + function/module)
-5. Assumptions I will carry forward (max 5)
+Use short task statements. Typical examples:
+- onboarding: `learn this repo architecture and risks`
+- daily Q&A: `why did this flow fail yesterday`
+- bug triage: `triage crash in startup path`
+- implementation: `implement compact renderer with compatibility`
 
-Then wait for my questions. Do not rebuild full context unless I explicitly say: "rebuild learning context".
+## Case 1: Cold Start (learn project, then standby)
+
+```bash
+python3 Scripts/codex_mem.py --root . ask \
+  "learn this project: architecture, entrypoint, persistence, risks" \
+  --project demo
 ```
 
-## Case 2: Daily Q&A (incremental, no rebuild)
+Optional diagnostics:
 
-```text
-Answer using existing codex-mem context in this project. Do incremental retrieval only.
+```bash
+python3 Scripts/codex_mem.py --root . ask \
+  "learn this project: architecture, entrypoint, persistence, risks" \
+  --project demo --mapping-debug
+```
 
-Workflow:
-1) `codex-mem ask "<my question>" --search-limit 6 --detail-limit 3 --code-top-k 6 --code-module-limit 4`
-2) If the question is time/sequence dependent (what happened before/after), run:
-   - `timeline <top-id> --before 2 --after 2`
-3) Read at most 2 files only if evidence is missing.
+## Case 2: Daily Q&A (incremental retrieval)
 
-Output:
-- Direct answer
-- Evidence (command + ID + path/function)
-- Risks/uncertainties (max 3)
-- Next step (max 3)
+```bash
+python3 Scripts/codex_mem.py --root . ask "what changed in generation flow" --project demo
+```
 
-Do not rebuild full project learning.
+If you want strict local routing only:
+
+```bash
+python3 Scripts/codex_mem.py --root . ask \
+  "what changed in generation flow" \
+  --project demo --mapping-fallback off
 ```
 
 ## Case 3: Bug/Incident Triage
 
-```text
-Triage this issue in this project with codex-mem 3-layer retrieval first, then code validation.
-
-Workflow:
-1) mem-search bug symptoms and related components (limit 12)
-2) timeline around top 3 IDs (before 4, after 4)
-3) get-observations for critical IDs
-4) Validate against current code paths
-
-Output:
-1. Probable root cause
-2. Reproduction path
-3. Minimal fix options (A/B)
-4. Verification checklist
-5. Evidence references (absolute path + function/module)
-
-Do not implement changes unless I explicitly say "apply fix".
+```bash
+python3 Scripts/codex_mem.py --root . ask \
+  "triage this regression and provide root cause path" \
+  --project demo
 ```
 
-## Case 4: Migration / Big Upgrade Review
+## Case 4: Implementation Mode
 
-```text
-In this project, reconstruct architecture changes after upgrade using codex-mem.
-
-Workflow:
-1) mem-search migration keywords (limit 15)
-2) timeline on top 4 IDs (before 5, after 5)
-3) get-observations on migration-critical IDs
-4) Read only key architecture files for confirmation
-
-Output:
-- New architecture overview
-- Differences vs previous architecture
-- Migration/compatibility risks
-- Priority validation checklist
-- Evidence (ID + absolute path + function/module)
-
-No file generation, no code changes.
+```bash
+python3 Scripts/codex_mem.py --root . ask \
+  "implement this task with minimal compatibility risk" \
+  --project demo
 ```
 
-## Case 5: Implementation Mode (after agreement)
+## Case 5: Legacy Prompt Comparison
 
-```text
-Implement now, but keep codex-mem evidence-first process.
+Use this only for regression checks:
 
-Before coding:
-1) `codex-mem ask "<task>" --search-limit 8 --detail-limit 5 --code-top-k 12 --code-module-limit 6`
-2) If needed: mem-search -> timeline -> get-observations for historical decisions
-3) Confirm assumptions and affected modules
-
-During coding:
-- Minimal patch
-- Keep interfaces stable unless explicitly required
-- Preserve backwards compatibility where possible
-
-After coding:
-- Run tests/build checks
-- Report what changed, what passed, and remaining risks
-- Include file-level evidence
+```bash
+python3 Scripts/codex_mem.py --root . ask \
+  "learn this repo architecture and top risks" \
+  --project demo --prompt-style legacy
 ```
 
-## Practical Rule of Thumb
+## Reading `ask` Output
 
-- Cold start: prioritize coverage gates (entrypoint + persistence + main flow) over completeness.
-- Daily Q&A: keep retrieval narrow; expand only when evidence is missing.
-- Deep forensics: intentionally pulling many Layer-3 details is fine, but always cite IDs and paths.
+Compact mode returns additional decision/quality fields:
+- `mapping_decision`: route source, confidence, low-confidence flag
+- `coverage_gate`: required/present/missing categories and pass/fail
+- `prompt_plan`: budget allocations and selected evidence
+- `prompt_metrics`: rendered prompt size and budget usage
+
+Compatibility fields still exist:
+- `suggested_prompt`
+- `token_estimate`
+
+## Rule of Thumb
+
+- Prefer short prompts.
+- Use `--mapping-debug` only when validating routing behavior.
+- Keep `compact` as default for production usage.
+- Use `legacy` only for A/B or regression checks.

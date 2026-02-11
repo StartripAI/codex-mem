@@ -66,7 +66,19 @@ Input:
 - `alpha` (optional)
 - `include_private` (optional bool)
 - `snippet_chars` (optional)
+- `prompt_style` (optional: `compact` or `legacy`)
+- `mapping_fallback` (optional: `auto` or `off`)
+- `mapping_debug` (optional bool)
 - `prompt_only` (optional bool)
+
+Output notes:
+- compatibility fields are preserved: `suggested_prompt`, `token_estimate`
+- additional fields:
+  - `mapping_decision`
+  - `coverage_gate`
+  - `prompt_plan`
+  - `prompt_metrics`
+  - `effective_params`
 
 ### `mem_export_session`
 
@@ -129,10 +141,6 @@ Input:
 
 ### `mem_summarize_session`
 - `session_id` required
-
-### `mem_export_session`
-- `session_id` required
-- optional: `include_private`, `anonymize`, `max_events`, `max_observations`, `output_path`, `indent`
 
 ## Error Model
 

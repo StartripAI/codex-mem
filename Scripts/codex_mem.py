@@ -30,6 +30,11 @@ import sys
 import time
 from typing import Dict, Iterable, List, Mapping, Sequence, Tuple
 
+from prompt_budgeter import build_prompt_plan
+from prompt_mapper import map_prompt_to_profile
+from prompt_profiles import get_prompt_profile
+from prompt_renderer import render_compact_prompt
+
 
 INDEX_VERSION = "1"
 DEFAULT_INDEX_DIR = ".codex_mem"
@@ -670,7 +675,6 @@ def describe_repo_root(root: pathlib.Path, *, max_entries: int = 120) -> str:
 def repo_seed_files(root: pathlib.Path) -> List[pathlib.Path]:
     # Minimal, high-signal, usually safe docs/manifests.
     candidates = [
-        "readmefirst.md",
         "README.md",
         "README.MD",
         "README",
@@ -2153,26 +2157,172 @@ def build_fused_prompt(
     return "\n".join(lines).strip()
 
 
+def infer_repo_category(path: str) -> str:
+    lower = (path or "").lower()
+    if not lower:
+        return "code"
+    if lower.endswith("app.swift") or lower.endswith("main.swift") or "appdelegate" in lower or "scenedelegate" in lower:
+        return "entrypoint"
+    if any(tok in lower for tok in ("database", "bootstrapper", "swiftdata", "coredata", "modelcontext", "sqlite", "migration", "store")):
+        return "persistence"
+    if any(tok in lower for tok in ("generation", "stream", "organize", "prism", "ai", "prompt")):
+        return "ai_generation"
+    if any(tok in lower for tok in ("backend", "/routes/", "api.ts", "index.ts", "server.ts")):
+        return "backend"
+    return "code"
+
+
+def _extract_repo_chunks(payload: Mapping[str, object] | object) -> List[Dict[str, object]]:
+    if not isinstance(payload, Mapping):
+        return []
+    raw = payload.get("chunks")
+    if not isinstance(raw, list):
+        return []
+    out: List[Dict[str, object]] = []
+    for chunk in raw:
+        if not isinstance(chunk, Mapping):
+            continue
+        row = dict(chunk)
+        row["category"] = infer_repo_category(str(row.get("path", "")))
+        out.append(row)
+    return out
+
+
+def _merge_repo_chunks(base: Sequence[Mapping[str, object]], incoming: Sequence[Mapping[str, object]], limit: int) -> List[Dict[str, object]]:
+    merged: List[Dict[str, object]] = []
+    seen = set()
+    for item in list(base) + list(incoming):
+        path = str(item.get("path", "")).strip()
+        start = int(item.get("start_line", 0) or 0)
+        end = int(item.get("end_line", 0) or 0)
+        key = (path, start, end)
+        if not path or key in seen:
+            continue
+        seen.add(key)
+        row = dict(item)
+        row["category"] = infer_repo_category(path)
+        merged.append(row)
+        if len(merged) >= max(1, limit):
+            break
+    return merged
+
+
+def ensure_repo_coverage(
+    *,
+    root: pathlib.Path,
+    question: str,
+    profile_name: str,
+    repo_payload: Mapping[str, object] | object,
+    code_top_k: int,
+    code_module_limit: int,
+    snippet_chars: int,
+    repo_index_dir: str,
+) -> Tuple[Dict[str, object], Dict[str, object]]:
+    payload = dict(repo_payload) if isinstance(repo_payload, Mapping) else {}
+    chunks = _extract_repo_chunks(payload)
+
+    required: List[str] = []
+    if profile_name == "onboarding":
+        required = ["entrypoint", "persistence", "ai_generation"]
+
+    present = sorted({str(item.get("category", "code")) for item in chunks})
+    missing = [cat for cat in required if cat not in present]
+    second_pass_runs: List[Dict[str, object]] = []
+
+    probe_queries = {
+        "entrypoint": "entrypoint startup bootstrap main app appdelegate scenedelegate",
+        "persistence": "persistence database storage modelcontext swiftdata coredata sqlite migration save",
+        "ai_generation": "ai generation note prism organize streaming delta",
+    }
+
+    if missing:
+        extra_chunks: List[Dict[str, object]] = []
+        for cat in missing:
+            probe_q = probe_queries.get(cat)
+            if not probe_q:
+                continue
+            probe_payload = run_repo_query(
+                root,
+                question=f"{question}\n\nCoverage probe: {probe_q}",
+                top_k=max(4, min(12, code_top_k)),
+                module_limit=max(4, min(12, code_module_limit)),
+                snippet_chars=snippet_chars,
+                index_dir=repo_index_dir,
+            )
+            probe_chunks = _extract_repo_chunks(probe_payload)
+            extra_chunks.extend(probe_chunks)
+            second_pass_runs.append(
+                {
+                    "category": cat,
+                    "query": probe_q,
+                    "chunk_count": len(probe_chunks),
+                    "warning": probe_payload.get("warning") if isinstance(probe_payload, Mapping) else None,
+                }
+            )
+        chunks = _merge_repo_chunks(chunks, extra_chunks, max(8, code_top_k + len(extra_chunks)))
+        payload["chunks"] = chunks
+
+    present = sorted({str(item.get("category", "code")) for item in chunks})
+    missing = [cat for cat in required if cat not in present]
+    gate = {
+        "profile": profile_name,
+        "required_categories": required,
+        "present_categories": present,
+        "missing_categories": missing,
+        "pass": len(missing) == 0,
+        "second_pass_runs": second_pass_runs,
+    }
+    return payload, gate
+
+
 def cmd_ask(args: argparse.Namespace) -> int:
     root = pathlib.Path(args.root).resolve()
     conn = open_db(root, args.index_dir)
     meta = fetch_meta(conn)
     vector_dim = int(meta.get("vector_dim", str(DEFAULT_VECTOR_DIM)))
 
+    parsed_nl = parse_natural_query(args.question)
+    mapping_decision = map_prompt_to_profile(
+        args.question,
+        parsed_nl=parsed_nl,
+        mapping_fallback=args.mapping_fallback,
+        llm_api_key=os.environ.get("OPENAI_API_KEY", ""),
+        llm_model=os.environ.get("OPENAI_PROMPT_ROUTER_MODEL", "gpt-4o-mini"),
+        llm_timeout_sec=8,
+    )
+    profile_name = str(mapping_decision.get("profile", "daily_qa"))
+    profile = get_prompt_profile(profile_name)
+    defaults = profile.defaults
+
+    search_limit = int(args.search_limit if args.search_limit is not None else defaults.get("search_limit", 20))
+    detail_limit = int(args.detail_limit if args.detail_limit is not None else defaults.get("detail_limit", 6))
+    code_top_k = int(args.code_top_k if args.code_top_k is not None else defaults.get("code_top_k", 8))
+    code_module_limit = int(args.code_module_limit if args.code_module_limit is not None else defaults.get("code_module_limit", 6))
+    alpha = float(args.alpha if args.alpha is not None else defaults.get("alpha", 0.7))
+    search_limit = max(1, search_limit)
+    detail_limit = max(1, detail_limit)
+    code_top_k = max(1, code_top_k)
+    code_module_limit = max(1, code_module_limit)
+
     auto_seeded = seed_repo_baseline(conn, root, args.project, trigger_query=args.question)
+    normalized_query = str(parsed_nl.get("normalized_query", "")).strip() or args.question
+    since_raw = parsed_nl.get("since")
+    until_raw = parsed_nl.get("until")
+    since = str(since_raw).strip() if isinstance(since_raw, str) and str(since_raw).strip() else None
+    until = str(until_raw).strip() if isinstance(until_raw, str) and str(until_raw).strip() else None
     layer1 = blended_search(
         conn,
-        query=args.question,
+        query=normalized_query,
         project=args.project,
         session_id=args.session_id,
-        since=None,
-        until=None,
+        since=since,
+        until=until,
         include_private=bool(args.include_private),
-        limit=args.search_limit,
+        limit=search_limit,
         vector_dim=vector_dim,
-        alpha=args.alpha,
+        alpha=alpha,
     )
-    selected_ids = [item.item_id for item in layer1[: args.detail_limit]]
+    selected_ids = [item.item_id for item in layer1[:detail_limit]]
     details = []
     for ident in selected_ids:
         typ, iid = parse_item_id(ident)
@@ -2192,10 +2342,21 @@ def cmd_ask(args: argparse.Namespace) -> int:
     repo_payload = run_repo_query(
         root,
         question=args.question,
-        top_k=args.code_top_k,
-        module_limit=args.code_module_limit,
+        top_k=code_top_k,
+        module_limit=code_module_limit,
         snippet_chars=args.snippet_chars,
         index_dir=args.repo_index_dir,
+    )
+
+    repo_payload, coverage_gate = ensure_repo_coverage(
+        root=root,
+        question=args.question,
+        profile_name=profile.name,
+        repo_payload=repo_payload,
+        code_top_k=code_top_k,
+        code_module_limit=code_module_limit,
+        snippet_chars=args.snippet_chars,
+        repo_index_dir=args.repo_index_dir,
     )
 
     memory_l1_tokens = sum(item.token_estimate for item in layer1)
@@ -2206,7 +2367,39 @@ def cmd_ask(args: argparse.Namespace) -> int:
         if isinstance(chunks, list):
             code_tokens = sum(estimate_tokens(str(c.get("snippet", ""))) for c in chunks)
 
-    prompt = build_fused_prompt(args.question, details, repo_payload, args.snippet_chars)
+    prompt_plan = build_prompt_plan(
+        profile=profile,
+        question=args.question,
+        memory_details=details,
+        repo_payload=repo_payload if isinstance(repo_payload, Mapping) else {},
+        total_budget=1800,
+        snippet_chars=args.snippet_chars,
+    )
+
+    if args.prompt_style == "legacy":
+        prompt = build_fused_prompt(args.question, details, repo_payload, args.snippet_chars)
+    else:
+        prompt = render_compact_prompt(
+            question=args.question,
+            profile=profile,
+            mapping_decision=mapping_decision,
+            prompt_plan=prompt_plan,
+            coverage_gate=coverage_gate,
+        )
+
+    prompt_metrics = {
+        "style": args.prompt_style,
+        "chars": len(prompt),
+        "tokens_est": estimate_tokens(prompt),
+        "budget_tokens_target": int(prompt_plan.get("budgets", {}).get("total", 0)),
+        "budget_tokens_used": int(prompt_plan.get("usage", {}).get("total_tokens_est", 0)),
+    }
+
+    mapping_view = dict(mapping_decision)
+    if not bool(args.mapping_debug):
+        # Keep payload concise by default while preserving the decision trace.
+        mapping_view.pop("profile_scores", None)
+
     payload = {
         "question": args.question,
         "stage": "fused_ask",
@@ -2214,6 +2407,17 @@ def cmd_ask(args: argparse.Namespace) -> int:
             "project": args.project,
             "session_id": args.session_id,
             "include_private": bool(args.include_private),
+        },
+        "effective_params": {
+            "profile": profile.name,
+            "search_limit": search_limit,
+            "detail_limit": detail_limit,
+            "code_top_k": code_top_k,
+            "code_module_limit": code_module_limit,
+            "alpha": alpha,
+            "normalized_query": normalized_query,
+            "since": since,
+            "until": until,
         },
         "auto_seeded": bool(auto_seeded),
         "db_counts": db_counts(conn),
@@ -2238,6 +2442,10 @@ def cmd_ask(args: argparse.Namespace) -> int:
             "repo_context": code_tokens,
             "total": memory_l1_tokens + memory_l3_tokens + code_tokens,
         },
+        "mapping_decision": mapping_view,
+        "coverage_gate": coverage_gate,
+        "prompt_plan": prompt_plan,
+        "prompt_metrics": prompt_metrics,
         "suggested_prompt": prompt,
     }
     if args.prompt_only:
@@ -2586,14 +2794,17 @@ def build_parser() -> argparse.ArgumentParser:
     add_project_arg(p_ask)
     p_ask.add_argument("question")
     p_ask.add_argument("--session-id", default=None)
-    p_ask.add_argument("--search-limit", type=int, default=20)
-    p_ask.add_argument("--detail-limit", type=int, default=6)
-    p_ask.add_argument("--code-top-k", type=int, default=8)
-    p_ask.add_argument("--code-module-limit", type=int, default=6)
+    p_ask.add_argument("--search-limit", type=int, default=None)
+    p_ask.add_argument("--detail-limit", type=int, default=None)
+    p_ask.add_argument("--code-top-k", type=int, default=None)
+    p_ask.add_argument("--code-module-limit", type=int, default=None)
     p_ask.add_argument("--repo-index-dir", default=".codex_knowledge")
-    p_ask.add_argument("--alpha", type=float, default=0.7)
+    p_ask.add_argument("--alpha", type=float, default=None)
     p_ask.add_argument("--include-private", action="store_true")
     p_ask.add_argument("--snippet-chars", type=int, default=DEFAULT_SNIPPET_CHARS)
+    p_ask.add_argument("--prompt-style", choices=["compact", "legacy"], default="compact")
+    p_ask.add_argument("--mapping-fallback", choices=["auto", "off"], default="auto")
+    p_ask.add_argument("--mapping-debug", action="store_true")
     p_ask.add_argument("--prompt-only", action="store_true")
     p_ask.set_defaults(func=cmd_ask)
 

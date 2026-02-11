@@ -20,6 +20,7 @@ Benchmark source:
 - Cold start (onboarding pack vs `ask`): [`Documentation/benchmarks/onboarding_pack_codex_mem_rich_20260211.json`](Documentation/benchmarks/onboarding_pack_codex_mem_rich_20260211.json)
 - Warm daily memory (progressive retrieval): [`Documentation/benchmarks/marketing_claims_20260211.json`](Documentation/benchmarks/marketing_claims_20260211.json)
 - Repo grounding (prompt vs full corpus): [`Documentation/benchmarks/repo_onboarding_codex_mem_20260211.json`](Documentation/benchmarks/repo_onboarding_codex_mem_20260211.json)
+- Prompt compaction (compact vs legacy): [`Documentation/benchmarks/prompt_compaction_20260211.json`](Documentation/benchmarks/prompt_compaction_20260211.json)
 - Notes: [`Documentation/benchmarks/MEASURED_SAVINGS_20260211.md`](Documentation/benchmarks/MEASURED_SAVINGS_20260211.md)
 
 Scenario savings (2026-02-11):
@@ -33,6 +34,12 @@ Scenario savings (2026-02-11):
 Repo onboarding snapshot (2026-02-11):
 - This repo grounding (aggregate-only): **97.76%** context reduction
 - Source: [`Documentation/benchmarks/repo_onboarding_codex_mem_20260211.json`](Documentation/benchmarks/repo_onboarding_codex_mem_20260211.json)
+
+Prompt compaction snapshot (2026-02-11):
+- Compact mode: **1495 tokens** estimated
+- Legacy mode: **3200 tokens** estimated
+- Reduction: **53.28%**
+- Source: [`Documentation/benchmarks/prompt_compaction_20260211.json`](Documentation/benchmarks/prompt_compaction_20260211.json)
 
 ## Why codex-mem
 
@@ -69,6 +76,24 @@ North star:
 
 ### Fused memory + code grounding
 - `ask` combines memory shortlist with code context from `repo_knowledge.py`
+- built-in prompt mapping + compaction keeps context short without requiring long user prompt templates
+
+### Built-in Prompt Strategy (Compact by Default)
+
+`ask` now runs a fixed internal pipeline:
+- profile mapping (`onboarding` / `daily_qa` / `bug_triage` / `implementation`)
+- retrieval + onboarding coverage gate (`entrypoint`, `persistence`, `ai_generation`)
+- token budgeting (default target: ~1800 prompt tokens)
+- compact prompt rendering (default) or legacy rendering (for regression)
+
+You can control behavior with:
+- `--prompt-style {compact,legacy}` (default: `compact`)
+- `--mapping-fallback {auto,off}` (default: `auto`)
+- `--mapping-debug` (include full profile score details)
+
+JSON output keeps compatibility and adds:
+- `suggested_prompt`, `token_estimate` (existing fields preserved)
+- `mapping_decision`, `coverage_gate`, `prompt_plan`, `prompt_metrics` (new fields)
 
 ### UX and operations
 - built-in natural-language search (`nl-search` / `mem-search`)
@@ -156,7 +181,13 @@ bash Scripts/codex_mem.sh get E12 O3
 ### 4) Ask with memory + code fusion
 
 ```bash
-bash Scripts/codex_mem.sh ask "What is the current generation chain from input to persisted output?" --project demo
+bash Scripts/codex_mem.sh ask "map entrypoint and persistence chain" --project demo
+```
+
+Compact mode is default. Force legacy format when comparing behavior:
+
+```bash
+python3 Scripts/codex_mem.py --root . ask "learn architecture and top risks" --project demo --prompt-style legacy
 ```
 
 ## Local Viewer
@@ -287,6 +318,18 @@ Smoke test verifies:
 - stable/beta config updates
 - web APIs
 - MCP tool registration and calls
+
+Domain isolation gate:
+
+```bash
+python3 Scripts/check_domain_isolation.py --root .
+```
+
+Prompt compaction benchmark:
+
+```bash
+python3 Scripts/benchmark_prompt_compaction.py --root . --runs 3
+```
 
 ## Launch Ops Commands
 
