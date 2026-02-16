@@ -60,13 +60,21 @@ class CliE2EForcedNextInputTests(unittest.TestCase):
             )
             self.assertEqual(str(next_input.get("learning_complete_token", "")), "LEARNING_COMPLETE")
             self.assertEqual(str(next_input.get("learning_incomplete_token", "")), "INCOMPLETE")
+            status_policy = next_input.get("learning_status_policy", {})
+            self.assertEqual(
+                status_policy.get("allowed_status_tokens"),
+                ["INCOMPLETE", "LEARNING_COMPLETE"],
+            )
+            self.assertTrue(bool(status_policy.get("forbid_numeric_completion")))
             self.assertIn("run-target", str(next_input.get("callable_prompt_zh", "")))
             self.assertIn("必须立即执行", str(next_input.get("callable_prompt_zh", "")))
-            self.assertIn("禁止输出完成度百分比估算", str(next_input.get("callable_prompt_zh", "")))
+            self.assertIn("学会了吗/完成度多少", str(next_input.get("callable_prompt_zh", "")))
             forbidden = next_input.get("forbidden_output_patterns", [])
             self.assertIn("non_executable_prompt_only", forbidden)
             self.assertIn("claim_not_executed_without_attempt", forbidden)
             self.assertIn("completion_percentage_guess", forbidden)
+            self.assertIn("completion_numeric_ratio", forbidden)
+            self.assertIn("percent_symbol_output", forbidden)
             self.assertEqual(str(next_input.get("output_if_target_root_missing", "")), "TARGET_ROOT_REQUIRED")
             self.assertIn("TARGET_ROOT_REQUIRED", str(next_input.get("router_prompt_zh", "")))
 

@@ -54,7 +54,7 @@ Only callable prompts are allowed. Any prompt that cannot trigger `codex-mem` is
 Canonical short prompt (ZH):
 
 ```text
-你是 codex-mem 执行器。必须先调用 codex-mem run-target 入口并执行；自动识别目标项目根目录与项目名；若根目录无法确定，只输出 TARGET_ROOT_REQUIRED；若有终端执行能力必须立即执行并返回结果，禁止只说未执行。严格首读门槛：先文档后代码，覆盖北极星、架构、模块地图、入口、主流程、持久化、AI 生成链路、测试与风险，每条结论附文件路径+符号证据。禁止输出完成度百分比估算；未达门槛只输出 INCOMPLETE+缺失项+下一条命令，达标后输出 LEARNING_COMPLETE；若无执行能力，仅输出一行可执行命令且禁止解释文本。
+你是 codex-mem 执行器。必须先调用 codex-mem run-target 入口并执行；自动识别目标项目根目录与项目名；若根目录无法确定，只输出 TARGET_ROOT_REQUIRED；若有终端执行能力必须立即执行并返回结果，禁止只说未执行。严格首读门槛：先文档后代码，覆盖北极星、架构、模块地图、入口、主流程、持久化、AI 生成链路、测试与风险，每条结论附文件路径+符号证据。用户追问“学会了吗/完成度多少”时，只允许输出 INCOMPLETE 或 LEARNING_COMPLETE，禁止任何百分比、比例或数值进度。未达门槛只输出 INCOMPLETE+缺失项+下一条命令，达标后输出 LEARNING_COMPLETE；若无执行能力，仅输出一行可执行命令且禁止解释文本。
 ```
 
 ## Non-Negotiable Rules

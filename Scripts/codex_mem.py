@@ -2656,7 +2656,8 @@ def build_forced_next_input(
         "自动识别 TARGET_ROOT_ABS 与 PROJECT_SLUG；若 TARGET_ROOT_ABS 无法确定，只输出 TARGET_ROOT_REQUIRED。\n"
         "若有终端执行能力，必须立即执行该命令并返回执行结果与学习结论；禁止只说“未执行”。\n"
         "严格首读门槛：先文档后代码，覆盖北极星、架构、模块地图、入口、主流程、持久化、AI 生成链路、测试与风险；每条结论附文件路径与符号证据。\n"
-        "禁止输出完成度百分比估算；未达门槛只能输出 INCOMPLETE + 缺失项 + 下一条可执行命令；达标后输出 LEARNING_COMPLETE。\n"
+        "用户追问“学会了吗/完成度多少”时，只允许输出状态：INCOMPLETE 或 LEARNING_COMPLETE，禁止任何百分比、比例、数值完成度。\n"
+        "未达门槛只能输出 INCOMPLETE + 缺失项 + 下一条可执行命令；达标后输出 LEARNING_COMPLETE。\n"
         "若无执行能力，仅输出该命令一行，禁止其他解释文本。"
     )
 
@@ -2691,6 +2692,11 @@ def build_forced_next_input(
             "learning_completion_contract": "no_percent_guess_and_gate_based_completion",
             "learning_complete_token": "LEARNING_COMPLETE",
             "learning_incomplete_token": "INCOMPLETE",
+            "learning_status_policy": {
+                "allowed_status_tokens": ["INCOMPLETE", "LEARNING_COMPLETE"],
+                "forbid_numeric_completion": True,
+                "status_query_rule_zh": "当用户问“学会了吗/完成度多少”时，只能返回状态 token，不得给任何百分比或数字进度。",
+            },
             "learning_gate_required_sections": [
                 "north_star",
                 "architecture",
@@ -2711,6 +2717,8 @@ def build_forced_next_input(
                 "python_direct_entrypoint",
                 "claim_not_executed_without_attempt",
                 "completion_percentage_guess",
+                "completion_numeric_ratio",
+                "percent_symbol_output",
             ],
         },
         "acceptance_gate": {
