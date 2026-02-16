@@ -67,6 +67,7 @@ class CliE2EForcedNextInputTests(unittest.TestCase):
                 ["INCOMPLETE", "PARTIAL", "LEARNING_COMPLETE"],
             )
             self.assertFalse(bool(status_policy.get("forbid_numeric_completion")))
+            self.assertTrue(bool(status_policy.get("incomplete_only_when_no_coverage")))
             self.assertEqual(str(status_policy.get("completion_query_mode", "")), "progress_report_with_completion_ratio")
             self.assertTrue(bool(status_policy.get("use_partial_by_default_when_progress_exists")))
             depth_targets = next_input.get("learning_depth_targets", {})
@@ -107,6 +108,7 @@ class CliE2EForcedNextInputTests(unittest.TestCase):
 
             # In an isolated temp repo without Scripts/repo_knowledge.py, onboarding coverage should fail,
             # and refine instructions must still be returned.
+            self.assertEqual(str(forced.get("completion_default_status", "")), "INCOMPLETE")
             self.assertEqual(forced.get("status"), "needs_refine")
             self.assertIn("refine_prompt_zh", next_input)
             self.assertIn("recommended_next_action", payload)

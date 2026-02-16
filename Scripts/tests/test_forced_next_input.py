@@ -51,6 +51,7 @@ class ForcedNextInputTests(unittest.TestCase):
         self.assertFalse(bool(status_policy.get("forbid_numeric_completion")))
         self.assertEqual(str(status_policy.get("completion_query_mode", "")), "progress_report_with_completion_ratio")
         self.assertTrue(bool(status_policy.get("use_partial_by_default_when_progress_exists")))
+        self.assertTrue(bool(status_policy.get("incomplete_only_when_no_coverage")))
         self.assertIn("项目用途", str(status_policy.get("status_query_rule_zh", "")))
         self.assertIn("仅在证据严重不足时返回 INCOMPLETE", str(status_policy.get("status_query_rule_zh", "")))
         depth_targets = nxt.get("learning_depth_targets", {})
@@ -94,6 +95,7 @@ class ForcedNextInputTests(unittest.TestCase):
         self.assertIn("TARGET_ROOT_REQUIRED", str(nxt.get("router_prompt_zh", "")))
         self.assertEqual(str(nxt.get("output_if_target_root_missing", "")), "TARGET_ROOT_REQUIRED")
         self.assertEqual(str(nxt.get("output_contract", "")), "single_line_shell_command_only")
+        self.assertEqual(str(payload.get("completion_default_status", "")), "LEARNING_COMPLETE")
         self.assertEqual(payload.get("status"), "ready")
 
     def test_failed_gate_adds_refine_prompt(self) -> None:
@@ -103,11 +105,26 @@ class ForcedNextInputTests(unittest.TestCase):
             coverage_gate={"pass": False, "missing_categories": ["entrypoint", "persistence"]},
         )
         nxt = payload.get("next_input", {})
+        self.assertEqual(str(payload.get("completion_default_status", "")), "INCOMPLETE")
         self.assertEqual(payload.get("status"), "needs_refine")
         self.assertIn("refine_prompt_zh", nxt)
         self.assertIn("entrypoint, persistence", str(nxt.get("refine_prompt_zh", "")))
         self.assertIn("run-target", str(nxt.get("refine_command_template_zh", "")))
         self.assertNotIn("refine_command_template_py_zh", nxt)
+
+    def test_partial_status_when_some_coverage_exists(self) -> None:
+        payload = build_forced_next_input(
+            root=pathlib.Path("."),
+            profile_name="onboarding",
+            coverage_gate={
+                "pass": False,
+                "required_categories": ["entrypoint", "persistence", "ai_generation"],
+                "present_categories": ["entrypoint"],
+                "missing_categories": ["persistence", "ai_generation"],
+            },
+        )
+        self.assertEqual(str(payload.get("completion_default_status", "")), "PARTIAL")
+        self.assertEqual(str(payload.get("status", "")), "partial_ready")
 
 
 if __name__ == "__main__":

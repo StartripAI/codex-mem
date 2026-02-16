@@ -2712,6 +2712,7 @@ def build_forced_next_input(
                     "已覆盖章节与缺失章节；仅在证据严重不足时返回 INCOMPLETE。"
                 ),
                 "use_partial_by_default_when_progress_exists": True,
+                "incomplete_only_when_no_coverage": True,
             },
             "learning_depth_targets": {
                 "target_completion_min": "95%",
@@ -2757,6 +2758,16 @@ def build_forced_next_input(
 
     gate_pass = bool(coverage_gate.get("pass", True))
     missing = coverage_gate.get("missing_categories", [])
+    present = coverage_gate.get("present_categories", [])
+    present_count = len([str(v).strip() for v in present if str(v).strip()]) if isinstance(present, list) else 0
+
+    if gate_pass:
+        out["completion_default_status"] = "LEARNING_COMPLETE"
+    elif present_count > 0:
+        out["completion_default_status"] = "PARTIAL"
+    else:
+        out["completion_default_status"] = "INCOMPLETE"
+
     missing_text = ", ".join(str(v) for v in missing) if isinstance(missing, list) and missing else ""
     if missing_text:
         refine_suffix = f"\n\n只补齐这些缺失证据类别：{missing_text}"
@@ -2765,7 +2776,12 @@ def build_forced_next_input(
             f'bash {shell_path} run-target "{target_root_for_cmd}" --project "{project_for_cmd}" '
             f'--question "{zh_prompt}{refine_suffix}"'
         )
-    out["status"] = "ready" if gate_pass else "needs_refine"
+    if gate_pass:
+        out["status"] = "ready"
+    elif present_count > 0:
+        out["status"] = "partial_ready"
+    else:
+        out["status"] = "needs_refine"
     return out
 
 
