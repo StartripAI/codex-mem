@@ -2661,7 +2661,9 @@ def build_forced_next_input(
         "7) 结果必须包含 P0/P1/P2 行动清单与下一条可执行命令。\n"
         "8) 完成度可返回百分比或区间，但必须说明依据（已覆盖章节与证据数量）。\n"
         "9) Benchmark 目标：覆盖率 >= 90%，综合效率提升 >= 30%（时间+token）。\n"
-        "10) 结果如实输出，不因结论好坏而改写。"
+        "10) 结果如实输出，不因结论好坏而改写。\n"
+        "11) 被问到“学会这个项目是做什么/完成度多少”时，优先返回项目用途 + 完成度估计 + 已覆盖/缺失章节；"
+        "仅在证据严重不足时返回 INCOMPLETE。"
     )
     callable_prompt_zh = (
         "通过 codex-mem run-target 执行目标项目深度首读并返回结果；自动识别目标项目根目录与项目名，无法识别时返回 TARGET_ROOT_REQUIRED。"
@@ -2699,15 +2701,17 @@ def build_forced_next_input(
             "execution_contract": "must_execute_when_capable",
             "learning_completion_contract": "completion_ratio_allowed_with_evidence_basis",
             "learning_complete_token": "LEARNING_COMPLETE",
+            "learning_partial_token": "PARTIAL",
             "learning_incomplete_token": "INCOMPLETE",
             "learning_status_policy": {
-                "allowed_status_tokens": ["INCOMPLETE", "LEARNING_COMPLETE"],
+                "allowed_status_tokens": ["INCOMPLETE", "PARTIAL", "LEARNING_COMPLETE"],
                 "forbid_numeric_completion": False,
-                "completion_query_mode": "section_gate_with_gap_commands",
+                "completion_query_mode": "progress_report_with_completion_ratio",
                 "status_query_rule_zh": (
-                    "当用户问“学会了吗/完成度多少”时，返回已覆盖章节、缺失章节、下一条补齐命令，"
-                    "并可给出基于章节覆盖与证据数量的完成度估计。"
+                    "当用户问“学会这个项目是做什么/完成度多少”时，优先返回项目用途、完成度估计、"
+                    "已覆盖章节与缺失章节；仅在证据严重不足时返回 INCOMPLETE。"
                 ),
+                "use_partial_by_default_when_progress_exists": True,
             },
             "learning_depth_targets": {
                 "target_completion_min": "95%",
@@ -2742,6 +2746,7 @@ def build_forced_next_input(
                 "python_direct_entrypoint",
                 "claim_not_executed_without_attempt",
                 "shallow_one_pass_summary",
+                "always_incomplete_on_progress_query",
             ],
         },
         "acceptance_gate": {

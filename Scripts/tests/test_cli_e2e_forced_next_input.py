@@ -59,14 +59,16 @@ class CliE2EForcedNextInputTests(unittest.TestCase):
                 "completion_ratio_allowed_with_evidence_basis",
             )
             self.assertEqual(str(next_input.get("learning_complete_token", "")), "LEARNING_COMPLETE")
+            self.assertEqual(str(next_input.get("learning_partial_token", "")), "PARTIAL")
             self.assertEqual(str(next_input.get("learning_incomplete_token", "")), "INCOMPLETE")
             status_policy = next_input.get("learning_status_policy", {})
             self.assertEqual(
                 status_policy.get("allowed_status_tokens"),
-                ["INCOMPLETE", "LEARNING_COMPLETE"],
+                ["INCOMPLETE", "PARTIAL", "LEARNING_COMPLETE"],
             )
             self.assertFalse(bool(status_policy.get("forbid_numeric_completion")))
-            self.assertEqual(str(status_policy.get("completion_query_mode", "")), "section_gate_with_gap_commands")
+            self.assertEqual(str(status_policy.get("completion_query_mode", "")), "progress_report_with_completion_ratio")
+            self.assertTrue(bool(status_policy.get("use_partial_by_default_when_progress_exists")))
             depth_targets = next_input.get("learning_depth_targets", {})
             self.assertEqual(str(depth_targets.get("target_completion_min", "")), "95%")
             self.assertEqual(int(depth_targets.get("min_evidence_per_section", 0)), 3)
@@ -85,6 +87,7 @@ class CliE2EForcedNextInputTests(unittest.TestCase):
             self.assertIn("MECE 七部分", str(next_input.get("backend_sop_zh", "")))
             self.assertIn("每部分至少 3 条证据", str(next_input.get("backend_sop_zh", "")))
             self.assertIn("覆盖率 >= 90%", str(next_input.get("backend_sop_zh", "")))
+            self.assertIn("优先返回项目用途 + 完成度估计", str(next_input.get("backend_sop_zh", "")))
             forbidden = next_input.get("forbidden_output_patterns", [])
             self.assertIn("non_executable_prompt_only", forbidden)
             self.assertIn("claim_not_executed_without_attempt", forbidden)
@@ -92,6 +95,7 @@ class CliE2EForcedNextInputTests(unittest.TestCase):
             self.assertNotIn("completion_numeric_ratio", forbidden)
             self.assertNotIn("percent_symbol_output", forbidden)
             self.assertIn("shallow_one_pass_summary", forbidden)
+            self.assertIn("always_incomplete_on_progress_query", forbidden)
             self.assertEqual(str(next_input.get("output_if_target_root_missing", "")), "TARGET_ROOT_REQUIRED")
             self.assertIn("TARGET_ROOT_REQUIRED", str(next_input.get("router_prompt_zh", "")))
 

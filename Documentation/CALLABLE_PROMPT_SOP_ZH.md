@@ -53,6 +53,8 @@ bash /Users/alfred/projects/codex-mem/Scripts/codex_mem.sh run-target "<TARGET_R
 - P0/P1/P2 action list
 - Next executable command
 - Completion may include percentage/range when backed by section coverage and evidence counts
+- For completion queries, prioritize: project purpose + completion estimate + covered/missing sections
+- Use `INCOMPLETE` only when evidence is severely insufficient
 
 ## Benchmark Targets
 

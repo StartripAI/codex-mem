@@ -41,15 +41,18 @@ class ForcedNextInputTests(unittest.TestCase):
             "completion_ratio_allowed_with_evidence_basis",
         )
         self.assertEqual(str(nxt.get("learning_complete_token", "")), "LEARNING_COMPLETE")
+        self.assertEqual(str(nxt.get("learning_partial_token", "")), "PARTIAL")
         self.assertEqual(str(nxt.get("learning_incomplete_token", "")), "INCOMPLETE")
         status_policy = nxt.get("learning_status_policy", {})
         self.assertEqual(
             status_policy.get("allowed_status_tokens"),
-            ["INCOMPLETE", "LEARNING_COMPLETE"],
+            ["INCOMPLETE", "PARTIAL", "LEARNING_COMPLETE"],
         )
         self.assertFalse(bool(status_policy.get("forbid_numeric_completion")))
-        self.assertEqual(str(status_policy.get("completion_query_mode", "")), "section_gate_with_gap_commands")
-        self.assertIn("完成度估计", str(status_policy.get("status_query_rule_zh", "")))
+        self.assertEqual(str(status_policy.get("completion_query_mode", "")), "progress_report_with_completion_ratio")
+        self.assertTrue(bool(status_policy.get("use_partial_by_default_when_progress_exists")))
+        self.assertIn("项目用途", str(status_policy.get("status_query_rule_zh", "")))
+        self.assertIn("仅在证据严重不足时返回 INCOMPLETE", str(status_policy.get("status_query_rule_zh", "")))
         depth_targets = nxt.get("learning_depth_targets", {})
         self.assertEqual(str(depth_targets.get("target_completion_min", "")), "95%")
         self.assertEqual(int(depth_targets.get("min_evidence_per_section", 0)), 3)
@@ -77,6 +80,7 @@ class ForcedNextInputTests(unittest.TestCase):
         self.assertIn("先文档后代码与测试", str(nxt.get("backend_sop_zh", "")))
         self.assertIn("覆盖率 >= 90%", str(nxt.get("backend_sop_zh", "")))
         self.assertIn("效率提升 >= 30%", str(nxt.get("backend_sop_zh", "")))
+        self.assertIn("优先返回项目用途 + 完成度估计", str(nxt.get("backend_sop_zh", "")))
         forbidden = nxt.get("forbidden_output_patterns", [])
         self.assertIn("non_executable_prompt_only", forbidden)
         self.assertIn("generic_advice_without_codex_mem_call", forbidden)
@@ -86,6 +90,7 @@ class ForcedNextInputTests(unittest.TestCase):
         self.assertNotIn("completion_numeric_ratio", forbidden)
         self.assertNotIn("percent_symbol_output", forbidden)
         self.assertIn("shallow_one_pass_summary", forbidden)
+        self.assertIn("always_incomplete_on_progress_query", forbidden)
         self.assertIn("TARGET_ROOT_REQUIRED", str(nxt.get("router_prompt_zh", "")))
         self.assertEqual(str(nxt.get("output_if_target_root_missing", "")), "TARGET_ROOT_REQUIRED")
         self.assertEqual(str(nxt.get("output_contract", "")), "single_line_shell_command_only")
