@@ -2650,6 +2650,12 @@ def build_forced_next_input(
         "TARGET_ROOT_ABS 识别顺序：用户给的绝对路径 > 当前工作区根目录（且不能是 codex-mem 仓库）。\n"
         "若无法确定 TARGET_ROOT_ABS，输出 TARGET_ROOT_REQUIRED。"
     )
+    callable_prompt_zh = (
+        "你是 codex-mem 命令路由器。只输出一行可执行命令，且必须使用 codex-mem run-target 入口：\n"
+        f'bash {shell_path} run-target "<TARGET_ROOT_ABS>" --project "<PROJECT_SLUG>" --question "<TASK>"。\n'
+        "自动识别 TARGET_ROOT_ABS 与 PROJECT_SLUG；若 TARGET_ROOT_ABS 无法确定，只输出 TARGET_ROOT_REQUIRED。\n"
+        "禁止输出解释文本。"
+    )
 
     out: Dict[str, object] = {
         "mandatory": True,
@@ -2677,8 +2683,15 @@ def build_forced_next_input(
             "preferred_entrypoint": "run-target",
             "router_prompt_zh": router_prompt_zh,
             "router_backend_prompt_zh": router_backend_prompt_zh,
+            "callable_prompt_contract": "must_call_codex_mem_only",
+            "callable_prompt_zh": callable_prompt_zh,
             "output_contract": "single_line_shell_command_only",
             "output_if_target_root_missing": "TARGET_ROOT_REQUIRED",
+            "forbidden_output_patterns": [
+                "non_executable_prompt_only",
+                "generic_advice_without_codex_mem_call",
+                "python_direct_entrypoint",
+            ],
         },
         "acceptance_gate": {
             "onboarding_requires": ["mapping_decision.profile=onboarding", "coverage_gate.pass=true"],

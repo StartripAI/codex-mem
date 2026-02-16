@@ -47,6 +47,16 @@ Hard routing policy:
 3. Else output `TARGET_ROOT_REQUIRED` only.
 4. Output format must be one line command only (no explanation).
 
+## Callable Prompt Template (Hard Requirement)
+
+Only callable prompts are allowed. Any prompt that cannot trigger `codex-mem` is invalid.
+
+Canonical short prompt (ZH):
+
+```text
+你是 codex-mem 命令路由器。只输出一行可执行命令，且必须使用 codex-mem run-target 入口。自动识别目标项目根目录与项目名；若根目录无法确定，只输出 TARGET_ROOT_REQUIRED；禁止输出解释文本。
+```
+
 ## Non-Negotiable Rules
 
 1. Keep user prompts short and task-focused.

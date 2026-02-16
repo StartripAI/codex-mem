@@ -34,6 +34,7 @@ Hard rules:
 - do not run without explicit `run-target "/ABS/PATH/TO/TARGET_PROJECT"`
 - do not accept non-executable guidance as output
 - for natural-language requests, resolver must auto-detect target root (path in user text first, then workspace root); if unresolved, return `TARGET_ROOT_REQUIRED`
+- only callable prompts are allowed; non-callable prompt text is invalid output
 
 ## What You Get
 
