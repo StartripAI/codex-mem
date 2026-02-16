@@ -75,7 +75,8 @@ Backend SOP (hard-locked):
    - function/class/symbol
    - command output summary (when commands were used)
 5. Do not invent KPI or percentage targets.
-   - Numeric claims are allowed only when quoting existing benchmark files.
+   - Exception: completion percentage/range is allowed when derived from explicit section coverage + evidence counts.
+   - Other numeric claims are allowed only when quoting existing benchmark files.
 
 ## Mandatory Response Contract (No Intro Text)
 

@@ -52,4 +52,4 @@ bash /Users/alfred/projects/codex-mem/Scripts/codex_mem.sh run-target "<TARGET_R
 - MECE 7-section report
 - P0/P1/P2 action list
 - Next executable command
-- Completion expressed as covered/missing sections only
+- Completion may include percentage/range when backed by section coverage and evidence counts

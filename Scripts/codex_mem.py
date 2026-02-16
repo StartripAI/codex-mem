@@ -2659,7 +2659,7 @@ def build_forced_next_input(
         "5) 每部分至少 3 条证据，证据格式固定：绝对文件路径 + 关键符号 + 作用说明。\n"
         "6) 任一部分证据不足时，当前轮次内自动补检并补齐，再给结论。\n"
         "7) 结果必须包含 P0/P1/P2 行动清单与下一条可执行命令。\n"
-        "8) 完成度表述使用覆盖项与缺失项，不使用主观百分比估算。"
+        "8) 完成度可返回百分比或区间，但必须说明依据（已覆盖章节与证据数量）。"
     )
     callable_prompt_zh = (
         "通过 codex-mem run-target 执行目标项目深度首读并返回结果；自动识别目标项目根目录与项目名，无法识别时返回 TARGET_ROOT_REQUIRED。"
@@ -2695,16 +2695,16 @@ def build_forced_next_input(
             "backend_rules_locked": True,
             "callable_prompt_contract": "must_call_codex_mem_only",
             "execution_contract": "must_execute_when_capable",
-            "learning_completion_contract": "no_percent_guess_and_gate_based_completion",
+            "learning_completion_contract": "completion_ratio_allowed_with_evidence_basis",
             "learning_complete_token": "LEARNING_COMPLETE",
             "learning_incomplete_token": "INCOMPLETE",
             "learning_status_policy": {
                 "allowed_status_tokens": ["INCOMPLETE", "LEARNING_COMPLETE"],
-                "forbid_numeric_completion": True,
+                "forbid_numeric_completion": False,
                 "completion_query_mode": "section_gate_with_gap_commands",
                 "status_query_rule_zh": (
-                    "当用户问“学会了吗/完成度多少”时，必须返回已覆盖章节、缺失章节与下一条补齐命令，"
-                    "不得给百分比或数字进度估算。"
+                    "当用户问“学会了吗/完成度多少”时，返回已覆盖章节、缺失章节、下一条补齐命令，"
+                    "并可给出基于章节覆盖与证据数量的完成度估计。"
                 ),
             },
             "learning_depth_targets": {
@@ -2712,6 +2712,7 @@ def build_forced_next_input(
                 "min_evidence_per_section": 3,
                 "must_read_order": ["docs_first", "code_second"],
                 "must_continue_on_gaps": True,
+                "completion_reporting": "percentage_or_range_with_evidence_basis",
             },
             "learning_gate_required_sections": [
                 "north_star",
@@ -2732,9 +2733,6 @@ def build_forced_next_input(
                 "generic_advice_without_codex_mem_call",
                 "python_direct_entrypoint",
                 "claim_not_executed_without_attempt",
-                "completion_percentage_guess",
-                "completion_numeric_ratio",
-                "percent_symbol_output",
                 "shallow_one_pass_summary",
             ],
         },

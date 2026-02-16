@@ -56,7 +56,7 @@ class CliE2EForcedNextInputTests(unittest.TestCase):
             self.assertEqual(str(next_input.get("execution_contract", "")), "must_execute_when_capable")
             self.assertEqual(
                 str(next_input.get("learning_completion_contract", "")),
-                "no_percent_guess_and_gate_based_completion",
+                "completion_ratio_allowed_with_evidence_basis",
             )
             self.assertEqual(str(next_input.get("learning_complete_token", "")), "LEARNING_COMPLETE")
             self.assertEqual(str(next_input.get("learning_incomplete_token", "")), "INCOMPLETE")
@@ -65,11 +65,15 @@ class CliE2EForcedNextInputTests(unittest.TestCase):
                 status_policy.get("allowed_status_tokens"),
                 ["INCOMPLETE", "LEARNING_COMPLETE"],
             )
-            self.assertTrue(bool(status_policy.get("forbid_numeric_completion")))
+            self.assertFalse(bool(status_policy.get("forbid_numeric_completion")))
             self.assertEqual(str(status_policy.get("completion_query_mode", "")), "section_gate_with_gap_commands")
             depth_targets = next_input.get("learning_depth_targets", {})
             self.assertEqual(str(depth_targets.get("target_completion_min", "")), "95%")
             self.assertEqual(int(depth_targets.get("min_evidence_per_section", 0)), 3)
+            self.assertEqual(
+                str(depth_targets.get("completion_reporting", "")),
+                "percentage_or_range_with_evidence_basis",
+            )
             self.assertIn("run-target", str(next_input.get("callable_prompt_zh", "")))
             self.assertIn("TARGET_ROOT_REQUIRED", str(next_input.get("callable_prompt_zh", "")))
             self.assertNotIn("用户", str(next_input.get("callable_prompt_zh", "")))
@@ -79,9 +83,9 @@ class CliE2EForcedNextInputTests(unittest.TestCase):
             forbidden = next_input.get("forbidden_output_patterns", [])
             self.assertIn("non_executable_prompt_only", forbidden)
             self.assertIn("claim_not_executed_without_attempt", forbidden)
-            self.assertIn("completion_percentage_guess", forbidden)
-            self.assertIn("completion_numeric_ratio", forbidden)
-            self.assertIn("percent_symbol_output", forbidden)
+            self.assertNotIn("completion_percentage_guess", forbidden)
+            self.assertNotIn("completion_numeric_ratio", forbidden)
+            self.assertNotIn("percent_symbol_output", forbidden)
             self.assertIn("shallow_one_pass_summary", forbidden)
             self.assertEqual(str(next_input.get("output_if_target_root_missing", "")), "TARGET_ROOT_REQUIRED")
             self.assertIn("TARGET_ROOT_REQUIRED", str(next_input.get("router_prompt_zh", "")))
