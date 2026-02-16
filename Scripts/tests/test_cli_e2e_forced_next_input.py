@@ -16,6 +16,7 @@ class CliE2EForcedNextInputTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory(prefix="codex_mem_e2e_") as tmp:
             root = pathlib.Path(tmp)
+            expected_root = str(root.resolve())
             (root / "README.md").write_text("# temp project\n", encoding="utf-8")
 
             cmd = [
@@ -47,9 +48,17 @@ class CliE2EForcedNextInputTests(unittest.TestCase):
 
             next_input = forced.get("next_input", {})
             self.assertIn("run-target", str(next_input.get("command_template_zh", "")))
-            self.assertIn("/ABS/PATH/TO/OTHER_PROJECT", str(next_input.get("command_template_zh", "")))
-            self.assertIn("--root \"/ABS/PATH/TO/OTHER_PROJECT\"", str(next_input.get("command_template_py_zh", "")))
+            self.assertIn(expected_root, str(next_input.get("command_template_zh", "")))
+            self.assertIn("--project", str(next_input.get("command_template_zh", "")))
+            self.assertIn(f'--root "{expected_root}"', str(next_input.get("command_template_py_zh", "")))
             self.assertIn("--mapping-debug", str(next_input.get("command_template_py_zh", "")))
+            self.assertEqual(str(next_input.get("output_if_target_root_missing", "")), "TARGET_ROOT_REQUIRED")
+            self.assertIn("TARGET_ROOT_REQUIRED", str(next_input.get("router_prompt_zh", "")))
+
+            resolution = forced.get("target_root_resolution", {})
+            self.assertEqual(str(resolution.get("strategy", "")), "auto-detect-absolute-target-root")
+            self.assertEqual(str(resolution.get("detected_source", "")), "runtime_root")
+            self.assertEqual(str(resolution.get("detected_target_root", "")), expected_root)
 
             # In an isolated temp repo without Scripts/repo_knowledge.py, onboarding coverage should fail,
             # and refine instructions must still be returned.

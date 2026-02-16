@@ -589,7 +589,59 @@ def parse_natural_query(query: str, now: dt.datetime | None = None) -> Dict[str,
 
     intent = "general"
     intent_keywords: List[str] = []
-    if any(k in lowered for k in ("bug", "fix", "regression", "incident", "hotfix")):
+
+    onboarding_phrase_hits = any(
+        k in lowered
+        for k in (
+            "learn this project",
+            "learn this repo",
+            "onboard this project",
+            "onboarding this project",
+            "optimize this project",
+            "target project",
+            "target repo",
+        )
+    ) or any(
+        k in src
+        for k in (
+            "学习这个项目",
+            "学习这个仓库",
+            "优化这个项目",
+            "优化这个仓库",
+            "目标项目",
+            "目标仓库",
+            "项目首读",
+        )
+    )
+    onboarding_term_hits = sum(
+        1
+        for k in (
+            "learn",
+            "onboard",
+            "architecture",
+            "module map",
+            "entrypoint",
+            "main flow",
+            "persistence",
+            "north star",
+            "学习",
+            "架构",
+            "模块",
+            "入口",
+            "主流程",
+            "持久化",
+            "北极星",
+            "代码库",
+            "仓库",
+            "项目",
+        )
+        if (k in lowered or k in src)
+    )
+
+    if onboarding_phrase_hits or onboarding_term_hits >= 2:
+        intent = "onboarding"
+        intent_keywords = ["learn", "architecture", "entrypoint", "persistence", "north-star"]
+    elif any(k in lowered for k in ("bug", "fix", "regression", "incident", "hotfix")):
         intent = "bugfix"
         intent_keywords = ["bug", "fix", "regression", "incident", "hotfix", "error"]
     elif any(k in lowered for k in ("release", "launch", "ship")):
@@ -2531,6 +2583,40 @@ def _profile_prompt_template(profile_name: str) -> Tuple[str, str]:
     return zh, en
 
 
+def _is_codex_mem_repo_root(root: pathlib.Path) -> bool:
+    return (root / "Scripts" / "codex_mem.py").exists() and (root / "Scripts" / "codex_mem.sh").exists()
+
+
+def _slugify_project_name(name: str) -> str:
+    slug = re.sub(r"[^a-z0-9._-]+", "-", str(name or "").strip().lower())
+    slug = slug.strip("-")
+    return slug or "target"
+
+
+def _detect_target_root_for_next_input(root: pathlib.Path) -> Tuple[str | None, str]:
+    env_candidates = (
+        "CODEX_TARGET_ROOT",
+        "TARGET_PROJECT_ROOT",
+        "PROJECT_ROOT",
+        "WORKSPACE_ROOT",
+    )
+    for env_name in env_candidates:
+        raw = os.environ.get(env_name, "").strip()
+        if not raw:
+            continue
+        try:
+            candidate = pathlib.Path(raw).expanduser().resolve()
+        except Exception:
+            continue
+        if candidate.is_dir() and not _is_codex_mem_repo_root(candidate):
+            return str(candidate), f"env:{env_name}"
+
+    resolved_root = root.resolve()
+    if resolved_root.is_dir() and not _is_codex_mem_repo_root(resolved_root):
+        return str(resolved_root), "runtime_root"
+    return None, "unresolved"
+
+
 def build_forced_next_input(
     *,
     root: pathlib.Path,
@@ -2542,20 +2628,30 @@ def build_forced_next_input(
     root_abs = str(root.resolve())
     zh_prompt, en_prompt = _profile_prompt_template(profile_name)
     required_fields = ["mapping_decision", "coverage_gate", "prompt_plan", "prompt_metrics"]
+    detected_target_root, target_root_source = _detect_target_root_for_next_input(root)
+    target_root_for_cmd = detected_target_root or "/ABS/PATH/TO/OTHER_PROJECT"
+    project_for_cmd = _slugify_project_name(pathlib.Path(target_root_for_cmd).name) if detected_target_root else "my-project"
 
     cmd_zh_one_click = (
-        f'bash {shell_path} run-target "/ABS/PATH/TO/OTHER_PROJECT" --project my-project --question "{zh_prompt}"'
+        f'bash {shell_path} run-target "{target_root_for_cmd}" --project "{project_for_cmd}" --question "{zh_prompt}"'
     )
     cmd_en_one_click = (
-        f'bash {shell_path} run-target "/ABS/PATH/TO/OTHER_PROJECT" --project my-project --question "{en_prompt}"'
+        f'bash {shell_path} run-target "{target_root_for_cmd}" --project "{project_for_cmd}" --question "{en_prompt}"'
     )
     cmd_zh_py = (
-        f'python3 {script_path} --root "/ABS/PATH/TO/OTHER_PROJECT" ask "{zh_prompt}" '
-        '--project my-project --mapping-debug'
+        f'python3 {script_path} --root "{target_root_for_cmd}" ask "{zh_prompt}" '
+        f'--project "{project_for_cmd}" --mapping-debug'
     )
     cmd_en_py = (
-        f'python3 {script_path} --root "/ABS/PATH/TO/OTHER_PROJECT" ask "{en_prompt}" '
-        '--project my-project --mapping-debug'
+        f'python3 {script_path} --root "{target_root_for_cmd}" ask "{en_prompt}" '
+        f'--project "{project_for_cmd}" --mapping-debug'
+    )
+    router_prompt_zh = (
+        "你是 codex-mem 执行路由器。用户给自然语言时，必须只输出一条可执行 shell 命令。\n"
+        f'唯一允许入口：bash {shell_path} run-target "<TARGET_ROOT_ABS>" --project "<PROJECT_SLUG>" --question "<TASK>"\n'
+        "TARGET_ROOT_ABS 自动识别顺序：1) 用户输入中的绝对路径；2) 当前 IDE/CLI 工作区根目录（且不能是 codex-mem 仓库）。\n"
+        "若 TARGET_ROOT_ABS 无法确定，只输出：TARGET_ROOT_REQUIRED。\n"
+        "输出必须为单行命令，禁止解释文本。"
     )
 
     out: Dict[str, object] = {
@@ -2563,8 +2659,19 @@ def build_forced_next_input(
         "why": "Always provide the next executable input for another project; do not return generic guidance only.",
         "required_output_fields": required_fields,
         "current_runtime_root": root_abs,
+        "target_root_resolution": {
+            "strategy": "auto-detect-absolute-target-root",
+            "detected_target_root": detected_target_root,
+            "detected_source": target_root_source,
+            "blocked_output_token": "TARGET_ROOT_REQUIRED",
+            "hard_rules": [
+                "must_execute_via_codex_mem_sh_run_target",
+                "must_use_explicit_absolute_target_root",
+                "single_line_command_only",
+            ],
+        },
         "next_input": {
-            "for_other_project_root": "/ABS/PATH/TO/OTHER_PROJECT",
+            "for_other_project_root": target_root_for_cmd,
             "command_template_zh": cmd_zh_one_click,
             "command_template_en": cmd_en_one_click,
             "command_template_py_zh": cmd_zh_py,
@@ -2572,6 +2679,9 @@ def build_forced_next_input(
             "prompt_template_zh": zh_prompt,
             "prompt_template_en": en_prompt,
             "preferred_entrypoint": "run-target",
+            "router_prompt_zh": router_prompt_zh,
+            "output_contract": "single_line_shell_command_only",
+            "output_if_target_root_missing": "TARGET_ROOT_REQUIRED",
         },
         "acceptance_gate": {
             "onboarding_requires": ["mapping_decision.profile=onboarding", "coverage_gate.pass=true"],
@@ -2586,12 +2696,12 @@ def build_forced_next_input(
         refine_suffix = f"\n\n只补齐这些缺失证据类别：{missing_text}"
         out["next_input"]["refine_prompt_zh"] = f"{zh_prompt}{refine_suffix}"
         out["next_input"]["refine_command_template_zh"] = (
-            f'bash {shell_path} run-target "/ABS/PATH/TO/OTHER_PROJECT" --project my-project '
+            f'bash {shell_path} run-target "{target_root_for_cmd}" --project "{project_for_cmd}" '
             f'--question "{zh_prompt}{refine_suffix}"'
         )
         out["next_input"]["refine_command_template_py_zh"] = (
-            f'python3 {script_path} --root "/ABS/PATH/TO/OTHER_PROJECT" ask '
-            f'"{zh_prompt}{refine_suffix}" --project my-project --mapping-debug'
+            f'python3 {script_path} --root "{target_root_for_cmd}" ask '
+            f'"{zh_prompt}{refine_suffix}" --project "{project_for_cmd}" --mapping-debug'
         )
     out["status"] = "ready" if gate_pass else "needs_refine"
     return out

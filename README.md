@@ -33,6 +33,7 @@ Hard rules:
 - do not bypass `codex_mem.sh run-target` for cross-repo onboarding
 - do not run without explicit `run-target "/ABS/PATH/TO/TARGET_PROJECT"`
 - do not accept non-executable guidance as output
+- for natural-language requests, resolver must auto-detect target root (path in user text first, then workspace root); if unresolved, return `TARGET_ROOT_REQUIRED`
 
 ## What You Get
 

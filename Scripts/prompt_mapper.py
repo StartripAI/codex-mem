@@ -15,21 +15,39 @@ LOW_CONFIDENCE_THRESHOLD = 0.55
 _RULE_KEYWORDS: Dict[str, Sequence[str]] = {
     "onboarding": (
         "learn",
+        "learn this project",
+        "learn this repo",
         "onboard",
+        "onboarding",
         "architecture",
         "module",
+        "module map",
+        "target project",
+        "target repo",
+        "optimize this project",
+        "optimize this repo",
         "entrypoint",
         "main flow",
         "persistence",
         "north star",
+        "repository",
         "学习",
+        "学习这个项目",
+        "学习这个仓库",
         "架构",
         "模块",
+        "模块地图",
         "入口",
         "主流程",
         "持久化",
         "落库",
         "北极星",
+        "优化项目",
+        "优化这个项目",
+        "目标项目",
+        "目标仓库",
+        "代码库",
+        "首读",
     ),
     "bug_triage": (
         "bug",
@@ -75,6 +93,27 @@ _RULE_KEYWORDS: Dict[str, Sequence[str]] = {
     ),
 }
 
+_PROJECT_SCOPE_TERMS: Sequence[str] = (
+    "project",
+    "repo",
+    "repository",
+    "target",
+    "项目",
+    "仓库",
+    "代码库",
+    "目标项目",
+)
+
+_PROMPT_REQUEST_TERMS: Sequence[str] = (
+    "prompt",
+    "instruction",
+    "cmd",
+    "command",
+    "提示词",
+    "指令",
+    "命令",
+)
+
 
 def _ordered_unique(values: Sequence[str]) -> List[str]:
     out: List[str] = []
@@ -111,15 +150,24 @@ def _rule_scores(question: str, parsed_nl: Mapping[str, object] | None) -> Dict[
     for profile, keywords in _RULE_KEYWORDS.items():
         for keyword in keywords:
             if keyword in lower or keyword in text:
-                if " " in keyword:
+                is_non_ascii_phrase = len(keyword) >= 4 and any(ord(ch) > 127 for ch in keyword)
+                if " " in keyword or "-" in keyword or is_non_ascii_phrase:
                     scores[profile] += 1.2
                 else:
                     scores[profile] += 0.7
 
+    asks_for_prompt = any(term in lower or term in text for term in _PROMPT_REQUEST_TERMS)
+    mentions_project_scope = any(term in lower or term in text for term in _PROJECT_SCOPE_TERMS)
+    if asks_for_prompt and mentions_project_scope:
+        # Hard policy: "give me a prompt/command for a project" should route to onboarding.
+        scores["onboarding"] += 2.6
+
     # Intents from codex_mem.parse_natural_query
     if parsed_nl:
         intent = str(parsed_nl.get("intent", "")).strip().lower()
-        if intent == "bugfix":
+        if intent == "onboarding":
+            scores["onboarding"] += 2.8
+        elif intent == "bugfix":
             scores["bug_triage"] += 2.5
         elif intent == "refactor":
             scores["implementation"] += 1.6
@@ -138,7 +186,7 @@ def _rule_scores(question: str, parsed_nl: Mapping[str, object] | None) -> Dict[
             scores["bug_triage"] += 0.8
 
     # Short prompts often indicate daily QA unless strong other signals exist.
-    if len(text.strip()) <= 24:
+    if len(text.strip()) <= 24 and max(scores["onboarding"], scores["implementation"], scores["bug_triage"]) < 1.2:
         scores["daily_qa"] += 0.6
 
     if max(scores.values()) <= 0:

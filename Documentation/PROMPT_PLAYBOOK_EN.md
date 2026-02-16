@@ -37,6 +37,16 @@ Forbidden execution patterns:
 - running without `--project`
 - returning advice without an executable next command
 
+## Natural-Language Routing (Hard Requirement)
+
+When the user gives natural language (not CLI args), routing must still output a runnable command.
+
+Hard routing policy:
+1. Extract target root from user text if an absolute path is present.
+2. Else use current IDE/CLI workspace root if it is not the `codex-mem` repo.
+3. Else output `TARGET_ROOT_REQUIRED` only.
+4. Output format must be one line command only (no explanation).
+
 ## Non-Negotiable Rules
 
 1. Keep user prompts short and task-focused.

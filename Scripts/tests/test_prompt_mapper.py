@@ -13,10 +13,16 @@ from codex_mem import parse_natural_query
 
 
 class PromptMapperTests(unittest.TestCase):
+    def test_runtime_parser_detects_onboarding_intent(self) -> None:
+        parsed = parse_natural_query("学习这个项目，给我prompt并跑target project")
+        self.assertEqual(parsed.get("intent"), "onboarding")
+
     def test_profile_accuracy_on_labeled_cases(self) -> None:
         cases = [
             ("Learn this project architecture and entrypoints", "onboarding"),
             ("学习这个项目，梳理北极星、架构和主流程", "onboarding"),
+            ("给我一段学习任何一个项目的prompt，走target project", "onboarding"),
+            ("优化这个项目，先做首读和模块地图", "onboarding"),
             ("What changed in the parser yesterday?", "daily_qa"),
             ("Explain why this query is slow", "daily_qa"),
             ("Triage regression after hotfix and find root cause", "bug_triage"),
@@ -55,6 +61,7 @@ class PromptMapperTests(unittest.TestCase):
         cases = [
             ("Learn this project architecture and entrypoints", "onboarding"),
             ("学习这个项目，梳理北极星、架构和主流程", "onboarding"),
+            ("给我一段学习任何一个项目的prompt，走target project", "onboarding"),
             ("What changed in the parser yesterday?", "daily_qa"),
             ("Triage regression after hotfix and find root cause", "bug_triage"),
             ("线上 incident 报错，先定位根因", "bug_triage"),
