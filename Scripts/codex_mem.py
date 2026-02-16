@@ -2647,11 +2647,11 @@ def build_forced_next_input(
         f'--project "{project_for_cmd}" --mapping-debug'
     )
     router_prompt_zh = (
-        "你是 codex-mem 执行路由器。用户给自然语言时，必须只输出一条可执行 shell 命令。\n"
-        f'唯一允许入口：bash {shell_path} run-target "<TARGET_ROOT_ABS>" --project "<PROJECT_SLUG>" --question "<TASK>"\n'
-        "TARGET_ROOT_ABS 自动识别顺序：1) 用户输入中的绝对路径；2) 当前 IDE/CLI 工作区根目录（且不能是 codex-mem 仓库）。\n"
-        "若 TARGET_ROOT_ABS 无法确定，只输出：TARGET_ROOT_REQUIRED。\n"
-        "输出必须为单行命令，禁止解释文本。"
+        "把用户自然语言请求转换为且仅输出 1 行命令：\n"
+        f'bash {shell_path} run-target "<TARGET_ROOT_ABS>" --project "<PROJECT_SLUG>" --question "<TASK>"。\n'
+        "TARGET_ROOT_ABS 优先取用户给的绝对路径，否则取当前工作区根目录（且不能是 codex-mem 仓库）。\n"
+        "无法确定 TARGET_ROOT_ABS 时只输出 TARGET_ROOT_REQUIRED。\n"
+        "禁止解释、标题、代码块或任何额外文本。"
     )
 
     out: Dict[str, object] = {
