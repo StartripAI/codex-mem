@@ -1214,6 +1214,7 @@ def filter_results_by_intent(
     *,
     intent_keywords: Sequence[str],
     snippet_chars: int,
+    project: str | None,
     include_private: bool,
 ) -> List[SearchResult]:
     if not intent_keywords:
@@ -1228,6 +1229,7 @@ def filter_results_by_intent(
                 typ,
                 iid,
                 snippet_chars=snippet_chars,
+                project=project,
                 include_private=include_private,
             )
         except ValueError:
@@ -1302,6 +1304,7 @@ def timeline_for_event(
     conn: sqlite3.Connection,
     *,
     event_id: int,
+    project: str | None,
     before: int,
     after: int,
     snippet_chars: int,
@@ -1316,6 +1319,8 @@ def timeline_for_event(
     ).fetchone()
     if not anchor:
         raise ValueError(f"event not found: E{event_id}")
+    if project and str(anchor["project"]) != str(project):
+        raise ValueError(f"event not in project '{project}': E{event_id}")
     anchor_meta = json.loads(anchor["metadata_json"]) if anchor["metadata_json"] else {}
     anchor_visibility = str(((anchor_meta.get("privacy") or {}).get("visibility", "public"))).lower()
     if anchor_visibility == "private" and not include_private:
@@ -1391,6 +1396,7 @@ def timeline_for_observation(
     conn: sqlite3.Connection,
     *,
     obs_id: int,
+    project: str | None,
     before: int,
     after: int,
     snippet_chars: int,
@@ -1405,6 +1411,8 @@ def timeline_for_observation(
     ).fetchone()
     if not obs:
         raise ValueError(f"observation not found: O{obs_id}")
+    if project and str(obs["project"]) != str(project):
+        raise ValueError(f"observation not in project '{project}': O{obs_id}")
     obs_meta = json.loads(obs["metadata_json"]) if obs["metadata_json"] else {}
     obs_visibility = str(((obs_meta.get("privacy") or {}).get("visibility", "public"))).lower()
     if obs_visibility == "private" and not include_private:
@@ -1429,6 +1437,7 @@ def timeline_for_observation(
         linked = timeline_for_event(
             conn,
             event_id=seed,
+            project=project,
             before=before,
             after=after,
             snippet_chars=snippet_chars,
@@ -1444,6 +1453,7 @@ def get_item_detail(
     item_type: str,
     item_id: int,
     snippet_chars: int,
+    project: str | None = None,
     include_private: bool = False,
 ) -> Dict[str, object]:
     if item_type == "event":
@@ -1457,6 +1467,8 @@ def get_item_detail(
         ).fetchone()
         if not row:
             raise ValueError(f"event not found: E{item_id}")
+        if project and str(row["project"]) != str(project):
+            raise ValueError(f"event not in project '{project}': E{item_id}")
         metadata = json.loads(row["metadata_json"]) if row["metadata_json"] else {}
         visibility = str(((metadata.get("privacy") or {}).get("visibility", "public"))).lower()
         if visibility == "private" and not include_private:
@@ -1490,6 +1502,8 @@ def get_item_detail(
     ).fetchone()
     if not row:
         raise ValueError(f"observation not found: O{item_id}")
+    if project and str(row["project"]) != str(project):
+        raise ValueError(f"observation not in project '{project}': O{item_id}")
     metadata = json.loads(row["metadata_json"]) if row["metadata_json"] else {}
     visibility = str(((metadata.get("privacy") or {}).get("visibility", "public"))).lower()
     if visibility == "private" and not include_private:
@@ -2049,6 +2063,7 @@ def cmd_nl_search(args: argparse.Namespace) -> int:
         raw_results,
         intent_keywords=parsed["intent_keywords"],
         snippet_chars=args.snippet_chars,
+        project=args.project,
         include_private=bool(args.include_private),
     )
     results = filtered[: args.limit] if filtered else raw_results[: args.limit]
@@ -2097,6 +2112,7 @@ def cmd_timeline(args: argparse.Namespace) -> int:
             payload = timeline_for_event(
                 conn,
                 event_id=item_id,
+                project=args.project,
                 before=args.before,
                 after=args.after,
                 snippet_chars=args.snippet_chars,
@@ -2106,6 +2122,7 @@ def cmd_timeline(args: argparse.Namespace) -> int:
             payload = timeline_for_observation(
                 conn,
                 obs_id=item_id,
+                project=args.project,
                 before=args.before,
                 after=args.after,
                 snippet_chars=args.snippet_chars,
@@ -2133,6 +2150,7 @@ def cmd_get_observations(args: argparse.Namespace) -> int:
                 item_type,
                 item_id,
                 args.snippet_chars,
+                project=args.project,
                 include_private=bool(args.include_private),
             )
         except ValueError:
@@ -2623,6 +2641,7 @@ def cmd_ask(args: argparse.Namespace) -> int:
                     typ,
                     iid,
                     args.snippet_chars,
+                    project=args.project,
                     include_private=bool(args.include_private),
                 )
             )

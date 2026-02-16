@@ -29,8 +29,8 @@ Usage:
   Scripts/codex_mem.sh config-get
   Scripts/codex_mem.sh config-set [--channel stable|beta] [--viewer-refresh-sec N] [--beta-endless-mode on|off]
   Scripts/codex_mem.sh export-session <session_id> [--anonymize on|off] [--include-private] [--output PATH]
-  Scripts/codex_mem.sh timeline <E123|O45> [--before N] [--after N]
-  Scripts/codex_mem.sh get <E123|O45> [more IDs...]
+  Scripts/codex_mem.sh timeline <E123|O45> [--project NAME] [--before N] [--after N]
+  Scripts/codex_mem.sh get <E123|O45> [more IDs...] [--project NAME]
   Scripts/codex_mem.sh ask "<question>" [ask-args...]
   Scripts/codex_mem.sh web [--host 127.0.0.1] [--port 37777] [--project-default NAME]
   Scripts/codex_mem.sh mcp [--project-default NAME]
