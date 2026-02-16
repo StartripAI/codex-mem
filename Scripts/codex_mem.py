@@ -2538,15 +2538,22 @@ def build_forced_next_input(
     coverage_gate: Mapping[str, object],
 ) -> Dict[str, object]:
     script_path = pathlib.Path(__file__).resolve()
+    shell_path = script_path.with_suffix(".sh")
     root_abs = str(root.resolve())
     zh_prompt, en_prompt = _profile_prompt_template(profile_name)
     required_fields = ["mapping_decision", "coverage_gate", "prompt_plan", "prompt_metrics"]
 
-    cmd_zh = (
+    cmd_zh_one_click = (
+        f'bash {shell_path} run-target "/ABS/PATH/TO/OTHER_PROJECT" --project my-project --question "{zh_prompt}"'
+    )
+    cmd_en_one_click = (
+        f'bash {shell_path} run-target "/ABS/PATH/TO/OTHER_PROJECT" --project my-project --question "{en_prompt}"'
+    )
+    cmd_zh_py = (
         f'python3 {script_path} --root "/ABS/PATH/TO/OTHER_PROJECT" ask "{zh_prompt}" '
         '--project my-project --mapping-debug'
     )
-    cmd_en = (
+    cmd_en_py = (
         f'python3 {script_path} --root "/ABS/PATH/TO/OTHER_PROJECT" ask "{en_prompt}" '
         '--project my-project --mapping-debug'
     )
@@ -2558,10 +2565,13 @@ def build_forced_next_input(
         "current_runtime_root": root_abs,
         "next_input": {
             "for_other_project_root": "/ABS/PATH/TO/OTHER_PROJECT",
-            "command_template_zh": cmd_zh,
-            "command_template_en": cmd_en,
+            "command_template_zh": cmd_zh_one_click,
+            "command_template_en": cmd_en_one_click,
+            "command_template_py_zh": cmd_zh_py,
+            "command_template_py_en": cmd_en_py,
             "prompt_template_zh": zh_prompt,
             "prompt_template_en": en_prompt,
+            "preferred_entrypoint": "run-target",
         },
         "acceptance_gate": {
             "onboarding_requires": ["mapping_decision.profile=onboarding", "coverage_gate.pass=true"],
@@ -2576,6 +2586,10 @@ def build_forced_next_input(
         refine_suffix = f"\n\n只补齐这些缺失证据类别：{missing_text}"
         out["next_input"]["refine_prompt_zh"] = f"{zh_prompt}{refine_suffix}"
         out["next_input"]["refine_command_template_zh"] = (
+            f'bash {shell_path} run-target "/ABS/PATH/TO/OTHER_PROJECT" --project my-project '
+            f'--question "{zh_prompt}{refine_suffix}"'
+        )
+        out["next_input"]["refine_command_template_py_zh"] = (
             f'python3 {script_path} --root "/ABS/PATH/TO/OTHER_PROJECT" ask '
             f'"{zh_prompt}{refine_suffix}" --project my-project --mapping-debug'
         )

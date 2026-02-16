@@ -18,23 +18,22 @@ No workflow is considered valid if it does not run through the `codex-mem` entry
 
 ## Mandatory Execution Entrypoint (Hard Requirement)
 
-Always execute via `codex_mem.py` with both:
-- `--root "/ABS/PATH/TO/TARGET_PROJECT"`
+Always execute via `codex_mem.sh run-target` with both:
+- explicit `run-target "/ABS/PATH/TO/TARGET_PROJECT"`
 - `--project <target_project_name>`
 
 Canonical command:
 
 ```bash
-python3 /ABS/PATH/TO/codex-mem/Scripts/codex_mem.py \
-  --root "/ABS/PATH/TO/TARGET_PROJECT" \
-  ask "learn this project: north star, architecture, module map, entrypoint, main flow, persistence, ai generation, risks." \
+bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+  run-target "/ABS/PATH/TO/TARGET_PROJECT" \
   --project target \
-  --mapping-debug
+  --question "learn this project: north star, architecture, module map, entrypoint, main flow, persistence, ai generation, risks."
 ```
 
 Forbidden execution patterns:
-- running `ask` without `--root`
-- using `--root .` when `.` is not the target repository
+- bypassing `codex_mem.sh run-target` in cross-repo onboarding flows
+- running `run-target` without explicit target repository path
 - running without `--project`
 - returning advice without an executable next command
 
@@ -81,6 +80,7 @@ Output must be returned in exactly this order:
    - `prompt_metrics`
    - `forced_next_input`
 4. One fully executable next `ask` command.
+   - Must use `codex_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT"` format.
 
 ### Failure Contract
 
@@ -88,6 +88,7 @@ If `coverage_gate.pass` is `false`, return only:
 1. `INCOMPLETE`
 2. missing category list
 3. one full `ask` command that includes "only fill missing categories"
+   - Must use `codex_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT"` format.
 
 No additional explanation is allowed in failure mode.
 
@@ -109,19 +110,20 @@ Useful controls:
 ### Step 1: Run onboarding ask
 
 ```bash
-python3 /ABS/PATH/TO/codex-mem/Scripts/codex_mem.py \
-  --root "/ABS/PATH/TO/TARGET_PROJECT" \
-  ask "learn this project: north star, architecture, module map, entrypoint, persistence, risks" \
-  --project target
+bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+  run-target "/ABS/PATH/TO/TARGET_PROJECT" \
+  --project target \
+  --question "learn this project: north star, architecture, module map, entrypoint, persistence, risks"
 ```
 
 ### Step 2: Validate routing and coverage (required for first-read)
 
 ```bash
-python3 /ABS/PATH/TO/codex-mem/Scripts/codex_mem.py \
-  --root "/ABS/PATH/TO/TARGET_PROJECT" \
-  ask "learn this project: north star, architecture, module map, entrypoint, persistence, risks" \
-  --project target --mapping-debug
+bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+  run-target "/ABS/PATH/TO/TARGET_PROJECT" \
+  --project target \
+  --question "learn this project: north star, architecture, module map, entrypoint, persistence, risks" \
+  -- --mapping-debug
 ```
 
 ### Step 3: Produce first-read report in fixed sections
@@ -156,60 +158,57 @@ Use short task statements:
 ### Case 1: Cold Start (learn project, then standby)
 
 ```bash
-python3 /ABS/PATH/TO/codex-mem/Scripts/codex_mem.py \
-  --root "/ABS/PATH/TO/TARGET_PROJECT" \
-  ask \
-  "learn this project: architecture, entrypoint, persistence, risks" \
-  --project target
+bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+  run-target "/ABS/PATH/TO/TARGET_PROJECT" \
+  --project target \
+  --question "learn this project: architecture, entrypoint, persistence, risks"
 ```
 
 ### Case 2: Daily Q&A (incremental retrieval)
 
 ```bash
-python3 /ABS/PATH/TO/codex-mem/Scripts/codex_mem.py \
-  --root "/ABS/PATH/TO/TARGET_PROJECT" \
-  ask "what changed in generation flow" \
-  --project target
+bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+  run-target "/ABS/PATH/TO/TARGET_PROJECT" \
+  --project target \
+  --question "what changed in generation flow"
 ```
 
 Strict local routing only:
 
 ```bash
-python3 /ABS/PATH/TO/codex-mem/Scripts/codex_mem.py \
-  --root "/ABS/PATH/TO/TARGET_PROJECT" \
-  ask \
-  "what changed in generation flow" \
-  --project target --mapping-fallback off
+bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+  run-target "/ABS/PATH/TO/TARGET_PROJECT" \
+  --project target \
+  --question "what changed in generation flow" \
+  -- --mapping-fallback off
 ```
 
 ### Case 3: Bug/Incident Triage
 
 ```bash
-python3 /ABS/PATH/TO/codex-mem/Scripts/codex_mem.py \
-  --root "/ABS/PATH/TO/TARGET_PROJECT" \
-  ask \
-  "triage this regression and provide root cause path" \
-  --project target
+bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+  run-target "/ABS/PATH/TO/TARGET_PROJECT" \
+  --project target \
+  --question "triage this regression and provide root cause path"
 ```
 
 ### Case 4: Implementation Mode
 
 ```bash
-python3 /ABS/PATH/TO/codex-mem/Scripts/codex_mem.py \
-  --root "/ABS/PATH/TO/TARGET_PROJECT" \
-  ask \
-  "implement this task with minimal compatibility risk" \
-  --project target
+bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+  run-target "/ABS/PATH/TO/TARGET_PROJECT" \
+  --project target \
+  --question "implement this task with minimal compatibility risk"
 ```
 
 ### Case 5: Legacy Prompt Comparison (regression only)
 
 ```bash
-python3 /ABS/PATH/TO/codex-mem/Scripts/codex_mem.py \
-  --root "/ABS/PATH/TO/TARGET_PROJECT" \
-  ask \
-  "learn this repo architecture and top risks" \
-  --project target --prompt-style legacy
+bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+  run-target "/ABS/PATH/TO/TARGET_PROJECT" \
+  --project target \
+  --question "learn this repo architecture and top risks" \
+  -- --prompt-style legacy
 ```
 
 ## Reading `ask` Output

@@ -18,6 +18,7 @@ SNAPSHOT_DOCS_SCRIPT="${ROOT}/Scripts/snapshot_docs.sh"
 usage() {
   cat <<'EOF'
 Usage:
+  Scripts/codex_mem.sh run-target <target_root> [--project NAME] [--question Q] [--no-mapping-debug] [-- ask-args...]
   Scripts/codex_mem.sh init [--project NAME]
   Scripts/codex_mem.sh session-start <session_id> [--title T]
   Scripts/codex_mem.sh prompt <session_id> "<user prompt>" [--title T]
@@ -57,6 +58,82 @@ cmd="${1:-help}"
 shift || true
 
 case "${cmd}" in
+  run-target)
+    if [[ $# -lt 1 ]]; then
+      echo "run-target requires <target_root>" >&2
+      usage
+      exit 1
+    fi
+
+    target_root_raw="${1}"
+    shift
+    if [[ ! -d "${target_root_raw}" ]]; then
+      echo "Target root not found: ${target_root_raw}" >&2
+      exit 1
+    fi
+    target_root="$(cd "${target_root_raw}" && pwd)"
+
+    project_name=""
+    question='learn this project: north star, architecture, module map, entrypoint, main flow, persistence, ai generation, risks.'
+    mapping_debug="on"
+    ask_args=()
+
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --project)
+          if [[ $# -lt 2 ]]; then
+            echo "Missing value for --project" >&2
+            exit 1
+          fi
+          project_name="$2"
+          shift 2
+          ;;
+        --question)
+          if [[ $# -lt 2 ]]; then
+            echo "Missing value for --question" >&2
+            exit 1
+          fi
+          question="$2"
+          shift 2
+          ;;
+        --no-mapping-debug)
+          mapping_debug="off"
+          shift
+          ;;
+        --mapping-debug)
+          mapping_debug="on"
+          shift
+          ;;
+        --)
+          shift
+          while [[ $# -gt 0 ]]; do
+            ask_args+=("$1")
+            shift
+          done
+          ;;
+        *)
+          ask_args+=("$1")
+          shift
+          ;;
+      esac
+    done
+
+    if [[ -z "${project_name}" ]]; then
+      project_name="$(basename "${target_root}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g; s/^-+//; s/-+$//')"
+      if [[ -z "${project_name}" ]]; then
+        project_name="target"
+      fi
+    fi
+
+    cmdline=("${PYTHON_BIN}" "${SCRIPT}" --root "${target_root}" ask "${question}" --project "${project_name}")
+    if [[ "${mapping_debug}" == "on" ]]; then
+      cmdline+=(--mapping-debug)
+    fi
+    if [[ ${#ask_args[@]} -gt 0 ]]; then
+      cmdline+=("${ask_args[@]}")
+    fi
+    exec "${cmdline[@]}"
+    ;;
   init)
     exec "${PYTHON_BIN}" "${SCRIPT}" --root "${ROOT}" init "$@"
     ;;

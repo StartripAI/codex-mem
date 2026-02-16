@@ -46,8 +46,10 @@ class CliE2EForcedNextInputTests(unittest.TestCase):
             self.assertIn("prompt_metrics", required_fields)
 
             next_input = forced.get("next_input", {})
+            self.assertIn("run-target", str(next_input.get("command_template_zh", "")))
             self.assertIn("/ABS/PATH/TO/OTHER_PROJECT", str(next_input.get("command_template_zh", "")))
-            self.assertIn("--mapping-debug", str(next_input.get("command_template_zh", "")))
+            self.assertIn("--root \"/ABS/PATH/TO/OTHER_PROJECT\"", str(next_input.get("command_template_py_zh", "")))
+            self.assertIn("--mapping-debug", str(next_input.get("command_template_py_zh", "")))
 
             # In an isolated temp repo without Scripts/repo_knowledge.py, onboarding coverage should fail,
             # and refine instructions must still be returned.

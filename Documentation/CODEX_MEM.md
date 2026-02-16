@@ -18,6 +18,22 @@ This guide describes production-style operation of `codex-mem` in Codex workflow
 - `Scripts/repo_knowledge.py`: code retrieval engine used by `ask`
 - `Skills/codex-mem/`: Codex skill package
 
+## 2.5) Cross-Repo Entrypoint (Hard Requirement)
+
+For target repositories outside this repo, execute only via `run-target` with explicit target root:
+
+```bash
+bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+  run-target "/ABS/PATH/TO/TARGET_PROJECT" \
+  --project target \
+  --question "learn this project: north star, architecture, module map, entrypoint, main flow, persistence, ai generation, risks."
+```
+
+Hard rules:
+- do not bypass `codex_mem.sh run-target` in cross-repo runs
+- do not omit explicit target root path
+- do not return non-executable guidance
+
 ## 3) Initialization
 
 ```bash
