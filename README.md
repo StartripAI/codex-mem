@@ -8,7 +8,7 @@ It keeps coding context persistent, retrieves only what matters, and drives stab
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![MCP](https://img.shields.io/badge/MCP-ready-0A7C66)
 
-[Quick Start](#quick-start) • [Most-Used Scenarios](#most-used-scenarios) • [Landing Page](Documentation/LAKESIDE_MEM_SHOWCASE.html) • [Scenario Research](Documentation/SCENARIO_RESEARCH.md) • [CLI Guide](Documentation/CODEX_MEM.md) • [Architecture](Documentation/ARCHITECTURE.md) • [Benchmarks](BENCHMARKS.md)
+[Quick Start](#quick-start) • [Most-Used Scenarios](#most-used-scenarios) • [Landing Page](Documentation/LAKESIDE_MEM_SHOWCASE.html) • [CLI Guide](Documentation/CODEX_MEM.md) • [Architecture](Documentation/ARCHITECTURE.md) • [Benchmarks](BENCHMARKS.md)
 
 Legacy compatibility:
 - `Scripts/codex_mem.sh` still works.
@@ -48,7 +48,7 @@ bash /ABS/PATH/TO/lakeside-mem/Scripts/lakeside_mem.sh \
 
 ## Most-Used Scenarios
 
-These are the most frequent workflows across modern coding-agent usage patterns (onboarding, issue fixing, debug loops, implementation, and repo-scale maintenance). The source set is documented in `Documentation/SCENARIO_RESEARCH.md`.
+These are the most frequent workflows across modern coding-agent usage patterns (onboarding, issue fixing, debug loops, implementation, and repo-scale maintenance).
 
 ### 1) New repo onboarding (first day)
 
