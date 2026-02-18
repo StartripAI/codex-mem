@@ -129,7 +129,7 @@ ONBOARDING_TRIGGER_TERMS = {
     "storage",
     "risk",
     "risks",
-    "北极星",
+    "目标",
     "学习",
     "架构",
     "模块",
@@ -255,7 +255,7 @@ def is_onboarding_query(text: str) -> bool:
     if not text:
         return False
     lowered = text.lower()
-    if any(term in text for term in ("学习这个项目", "北极星", "模块地图", "主流程", "落库")):
+    if any(term in text for term in ("学习这个项目", "目标", "模块地图", "主流程", "落库")):
         return True
     for term in ONBOARDING_TRIGGER_TERMS:
         if term in lowered:
@@ -293,7 +293,7 @@ def retrieval_hints(query: str) -> List[str]:
     if onboarding:
         hints += [
             "learn project",
-            "north star goal vision",
+            "project goal goal vision",
             "architecture module map components",
             "entrypoint main bootstrap startup",
             "main flow pipeline dataflow",
@@ -623,7 +623,7 @@ def diversify_chunks(chunks: Sequence[QueryResult], top_k: int, *, doc_cap: int 
             return True
         return False
 
-    # Keep a small amount of docs for "north star / design intent", then prioritize code.
+    # Keep a small amount of docs for "project goal / design intent", then prioritize code.
     doc_cap = max(0, int(doc_cap))
     if doc_cap:
         emit_from(docs, limit=min(top_k, doc_cap))

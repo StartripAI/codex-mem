@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lakeside-mem | Token Is the Hard Currency</title>
+  <style>
+    :root {
+      --bg-a: #f7f1ff;
+      --bg-b: #fff8fc;
+      --bg-c: #f2fff8;
+      --ink: #1f2431;
+      --sub: #4f586d;
+      --glass: rgba(255, 255, 255, 0.52);
+      --line: rgba(255, 255, 255, 0.78);
+      --shadow: 0 18px 48px rgba(115, 92, 178, 0.14);
+      --a1: #b99dff;
+      --a2: #ffa8d2;
+      --a3: #8fe2b8;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "Inter", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(46rem 46rem at 8% 10%, rgba(185,157,255,0.30), transparent 62%),
+        radial-gradient(40rem 40rem at 93% 6%, rgba(255,168,210,0.24), transparent 60%),
+        radial-gradient(40rem 40rem at 50% 94%, rgba(143,226,184,0.24), transparent 62%),
+        linear-gradient(135deg, var(--bg-a), var(--bg-b) 54%, var(--bg-c));
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 46px 18px 72px;
+    }
+
+    .glass {
+      background: linear-gradient(145deg, rgba(255,255,255,0.62), rgba(255,255,255,0.30));
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      backdrop-filter: blur(13px) saturate(130%);
+      -webkit-backdrop-filter: blur(13px) saturate(130%);
+      box-shadow: var(--shadow);
+    }
+
+    .hero { padding: 30px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      border-radius: 999px;
+      color: #363d4f;
+      border: 1px solid rgba(255,255,255,0.86);
+      background: rgba(255,255,255,0.76);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--a1), var(--a2), var(--a3));
+    }
+
+    h1 {
+      margin: 14px 0 10px;
+      font-size: clamp(30px, 4.9vw, 54px);
+      line-height: 1.06;
+      letter-spacing: -0.02em;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--sub);
+      font-size: 16px;
+      line-height: 1.82;
+      max-width: 980px;
+    }
+
+    .metrics {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      border: 1px solid rgba(255,255,255,0.80);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.62);
+      padding: 11px;
+      min-height: 88px;
+    }
+
+    .metric .v { font-size: 12px; color: var(--sub); line-height: 1.35; }
+    .metric .k { margin-top: 6px; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+
+    .grid {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .card { padding: 22px; }
+    h2 { margin: 0 0 10px; font-size: 22px; letter-spacing: -0.01em; }
+
+    ol {
+      margin: 0;
+      padding-left: 20px;
+      line-height: 1.74;
+      font-size: 15px;
+    }
+
+    li + li { margin-top: 6px; }
+
+    .scenarios {
+      margin-top: 14px;
+      padding: 22px;
+    }
+
+    .scenario {
+      padding: 12px 0;
+      border-top: 1px solid rgba(255,255,255,0.65);
+    }
+
+    .scenario:first-of-type { border-top: 0; padding-top: 0; }
+
+    .scenario h3 {
+      margin: 0 0 6px;
+      font-size: 16px;
+    }
+
+    .scenario p {
+      margin: 0;
+      color: var(--sub);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    pre {
+      margin: 8px 0 0;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(23, 28, 40, 0.94);
+      color: #e7eaf4;
+      font-size: 12px;
+      line-height: 1.55;
+      overflow-x: auto;
+    }
+
+    .closing {
+      margin-top: 14px;
+      padding: 22px;
+      color: #2c3447;
+      line-height: 1.78;
+    }
+
+    .closing a { color: #3b4fd2; text-decoration: none; }
+
+    @media (max-width: 980px) {
+      .metrics { grid-template-columns: 1fr 1fr; }
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { padding: 22px 12px 34px; }
+      .hero, .card, .scenarios, .closing { padding: 16px; }
+      .metrics { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero glass">
+      <span class="badge"><span class="dot"></span>Lakeside-mem | Developer Memory Runtime</span>
+      <h1>Token is the hard currency of modern work and research.</h1>
+      <p class="lead">
+        Lakeside-mem helps teams stop re-paying context costs every session.
+        It runs tasks through a 6-layer memory runtime, retrieves the minimum useful context,
+        and returns evidence-backed output plus the next executable command.
+      </p>
+      <div class="metrics">
+        <div class="metric"><div class="v">Prompt compaction saving</div><div class="k">52.86%</div><div class="v">vs legacy prompt</div></div>
+        <div class="metric"><div class="v">Scenario max token saving</div><div class="k">99.84%</div><div class="v">scenario matrix</div></div>
+        <div class="metric"><div class="v">Marketing benchmark saving</div><div class="k">99.84%</div><div class="v">latest benchmark</div></div>
+        <div class="metric"><div class="v">Runtime pipeline</div><div class="k">4/4</div><div class="v">stages passed</div></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="card glass">
+        <h2>Core Workflow</h2>
+        <ol>
+          <li>Task intake via `run-target` / `run-target-auto`</li>
+          <li>Plan compile into `TaskSpec` + `ExecutionPlan`</li>
+          <li>Memory writes into SQLite + FTS + graph-lite</li>
+          <li>Hybrid retrieval (lexical + structure + graph-lite + optional embeddings)</li>
+          <li>Single-model execution (`none|codex|claude`)</li>
+          <li>Coverage gate + critic + forced next command delivery</li>
+        </ol>
+      </article>
+
+      <article class="card glass">
+        <h2>Why Teams Like It</h2>
+        <ol>
+          <li>Less repeated context dumping</li>
+          <li>Faster onboarding in unfamiliar repos</li>
+          <li>More stable long-running task output</li>
+          <li>Stronger traceability with file/symbol evidence</li>
+          <li>Practical CLI-first workflow, no store dependency</li>
+        </ol>
+      </article>
+    </section>
+
+    <section class="scenarios glass">
+      <h2>Most-Used Scenarios (How To Use)</h2>
+
+      <div class="scenario">
+        <h3>1) First-day onboarding</h3>
+        <p>Learn architecture, entrypoint, persistence, AI path, tests, and risks with evidence.</p>
+        <pre>bash Scripts/lakeside_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT" --project target \
+  --question "learn this project: goal, architecture, module map, entrypoint, main flow, persistence, ai generation, tests, risks"</pre>
+      </div>
+
+      <div class="scenario">
+        <h3>2) Bug triage and root cause</h3>
+        <p>Turn an issue into repro path, root cause chain, and minimal-risk fix plan.</p>
+        <pre>bash Scripts/lakeside_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT" --project target \
+  --question "triage this bug: repro path, root cause chain, minimal-risk fix, validation checklist"</pre>
+      </div>
+
+      <div class="scenario">
+        <h3>3) Debug failing tests / terminal errors</h3>
+        <p>Isolate failure points quickly and return the smallest reliable patch direction.</p>
+        <pre>bash Scripts/lakeside_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT" --project target \
+  --question "debug this failure: isolate failing path, evidence, smallest reliable fix"</pre>
+      </div>
+
+      <div class="scenario">
+        <h3>4) Feature implementation</h3>
+        <p>Implement with boundaries, compatibility checks, and validation steps.</p>
+        <pre>bash Scripts/lakeside_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT" --project target \
+  --question "implement this feature with minimal patch, compatibility boundaries, tests, rollout notes"</pre>
+      </div>
+
+      <div class="scenario">
+        <h3>5) Large-codebase refactor</h3>
+        <p>Map dependencies and execute staged refactors with regression guardrails.</p>
+        <pre>bash Scripts/lakeside_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT" --project target \
+  --question "plan a safe refactor: dependency map, blast radius, staged steps, regression checks"</pre>
+      </div>
+
+      <div class="scenario">
+        <h3>6) PR review / incident forensics / handoff</h3>
+        <p>Use the same entrypoint for review risk scans, timeline reconstruction, and clean team handoffs.</p>
+        <pre>bash Scripts/lakeside_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT" --project target \
+  --question "review this change or incident timeline, list evidence, open risks, and next executable command"</pre>
+      </div>
+    </section>
+
+    <section class="closing glass">
+      Lakeside-mem is a straightforward tool for a simple problem:
+      repeated context is expensive.
+      Keep memory persistent, pull only what you need, and keep moving.
+      <br/><br/>
+      Repo: <a href="https://github.com/StartripAI/lakeside-mem" target="_blank" rel="noreferrer">https://github.com/StartripAI/lakeside-mem</a>
+    </section>
+  </main>
+</body>
+</html>

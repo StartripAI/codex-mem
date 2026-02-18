@@ -210,7 +210,7 @@ PY
     target_root="$(cd "${target_root_raw}" && pwd)"
 
     project_name=""
-    question='learn this project: north star, architecture, module map, entrypoint, main flow, persistence, ai generation, risks.'
+    question='learn this project: project goal, architecture, module map, entrypoint, main flow, persistence, ai generation, risks.'
     mapping_debug="on"
     executor_mode="none"
     ask_args=()

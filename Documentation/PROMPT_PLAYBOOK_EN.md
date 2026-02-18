@@ -8,7 +8,7 @@ This playbook is for short user prompts, but with strict operating rules. `Lakes
 - Defines mandatory first-read procedure for project learning.
 - Enforces evidence-grounded output rules.
 
-## Single North Star (Hard Requirement)
+## Single Goal (Hard Requirement)
 
 The only success criterion is:
 - run a target repository through `Lakeside-mem` automation
@@ -28,7 +28,7 @@ Canonical command:
 bash /ABS/PATH/TO/lakeside-mem/Scripts/lakeside_mem.sh \
   run-target "/ABS/PATH/TO/TARGET_PROJECT" \
   --project target \
-  --question "learn this project: north star, architecture, module map, entrypoint, main flow, persistence, ai generation, risks."
+  --question "learn this project: project goal, architecture, module map, entrypoint, main flow, persistence, ai generation, risks."
 ```
 
 Forbidden execution patterns:
@@ -138,7 +138,7 @@ Useful controls:
 bash /ABS/PATH/TO/lakeside-mem/Scripts/lakeside_mem.sh \
   run-target "/ABS/PATH/TO/TARGET_PROJECT" \
   --project target \
-  --question "learn this project: north star, architecture, module map, entrypoint, persistence, risks"
+  --question "learn this project: project goal, architecture, module map, entrypoint, persistence, risks"
 ```
 
 ### Step 2: Validate routing and coverage (required for first-read)
@@ -147,14 +147,14 @@ bash /ABS/PATH/TO/lakeside-mem/Scripts/lakeside_mem.sh \
 bash /ABS/PATH/TO/lakeside-mem/Scripts/lakeside_mem.sh \
   run-target "/ABS/PATH/TO/TARGET_PROJECT" \
   --project target \
-  --question "learn this project: north star, architecture, module map, entrypoint, persistence, risks" \
+  --question "learn this project: project goal, architecture, module map, entrypoint, persistence, risks" \
   -- --mapping-debug
 ```
 
 ### Step 3: Produce first-read report in fixed sections
 
 Required sections:
-- north star and boundaries
+- project goal and boundaries
 - architecture + module map
 - main flow (input -> processing -> persistence -> output)
 - evidence table for `entrypoint` / `persistence` / `ai_generation`

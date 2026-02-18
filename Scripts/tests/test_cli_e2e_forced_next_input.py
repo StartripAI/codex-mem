@@ -25,7 +25,7 @@ class CliE2EForcedNextInputTests(unittest.TestCase):
                 "--root",
                 str(root),
                 "ask",
-                "学习这个项目：北极星、架构、模块地图、入口、持久化、主流程、风险",
+                "学习这个项目：目标、架构、模块地图、入口、持久化、主流程、风险",
                 "--project",
                 "e2e",
                 "--mapping-debug",

@@ -29,7 +29,7 @@ _RULE_KEYWORDS: Dict[str, Sequence[str]] = {
         "entrypoint",
         "main flow",
         "persistence",
-        "north star",
+        "project goal",
         "repository",
         "学习",
         "学习这个项目",
@@ -41,7 +41,7 @@ _RULE_KEYWORDS: Dict[str, Sequence[str]] = {
         "主流程",
         "持久化",
         "落库",
-        "北极星",
+        "目标",
         "优化项目",
         "优化这个项目",
         "目标项目",
@@ -180,7 +180,7 @@ def _rule_scores(question: str, parsed_nl: Mapping[str, object] | None) -> Dict[
     hints = _safe_retrieval_hints(text)
     if hints:
         hints_join = " ".join(hints).lower()
-        if any(k in hints_join for k in ("north star", "entrypoint", "architecture", "persistence")):
+        if any(k in hints_join for k in ("project goal", "entrypoint", "architecture", "persistence")):
             scores["onboarding"] += 2.0
         if any(k in hints_join for k in ("risk", "failure", "incident")):
             scores["bug_triage"] += 0.8

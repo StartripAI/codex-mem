@@ -28,7 +28,7 @@
     "scan_time_ms": 1.436
   },
   "onboarding_prompt": {
-    "question": "Learn this project: north star, architecture, modules, entrypoints, main flow, persistence/output, top risks.",
+    "question": "Learn this project: project goal, architecture, modules, entrypoints, main flow, persistence/output, top risks.",
     "top_k": 10,
     "module_limit": 6,
     "snippet_chars": 1000,

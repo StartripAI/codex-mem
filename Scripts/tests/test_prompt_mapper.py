@@ -20,7 +20,7 @@ class PromptMapperTests(unittest.TestCase):
     def test_profile_accuracy_on_labeled_cases(self) -> None:
         cases = [
             ("Learn this project architecture and entrypoints", "onboarding"),
-            ("学习这个项目，梳理北极星、架构和主流程", "onboarding"),
+            ("学习这个项目，梳理目标、架构和主流程", "onboarding"),
             ("给我一段学习任何一个项目的prompt，走target project", "onboarding"),
             ("优化这个项目，先做首读和模块地图", "onboarding"),
             ("What changed in the parser yesterday?", "daily_qa"),
@@ -60,7 +60,7 @@ class PromptMapperTests(unittest.TestCase):
     def test_profile_accuracy_with_runtime_parser(self) -> None:
         cases = [
             ("Learn this project architecture and entrypoints", "onboarding"),
-            ("学习这个项目，梳理北极星、架构和主流程", "onboarding"),
+            ("学习这个项目，梳理目标、架构和主流程", "onboarding"),
             ("给我一段学习任何一个项目的prompt，走target project", "onboarding"),
             ("What changed in the parser yesterday?", "daily_qa"),
             ("Triage regression after hotfix and find root cause", "bug_triage"),

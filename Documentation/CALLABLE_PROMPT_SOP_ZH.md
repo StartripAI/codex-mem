@@ -1,6 +1,6 @@
 # Callable Prompt Backend SOP (ZH)
 
-## North Star
+## Goal
 
 - Use `Lakeside-mem` as the only execution entrypoint for target-project deep onboarding.
 - Produce a single-pass, high-completeness project understanding report grounded in file/symbol evidence.

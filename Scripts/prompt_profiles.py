@@ -25,7 +25,7 @@ PROFILES: Dict[str, PromptProfile] = {
             "Do not guess when evidence is incomplete."
         ),
         goal_template=(
-            "Build a reliable project model: north star, architecture map, entrypoint/startup, "
+            "Build a reliable project model: project goal, architecture map, entrypoint/startup, "
             "main flow, persistence/output, and top risks."
         ),
         defaults={

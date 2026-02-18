@@ -1,166 +1,143 @@
 # Lakeside-mem
 
-`Lakeside-mem` is a memory runtime for coding workflows.
-It lets you run long tasks on a target repository with less repeated context, lower token waste, and more stable outputs.
+## Token is the hard currency of modern work and research.
+
+Lakeside-mem is a local-first memory runtime for software teams.
+It keeps coding context persistent, retrieves only what matters, and drives stable next actions with evidence.
 
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![MCP](https://img.shields.io/badge/MCP-ready-0A7C66)
 
-[Quick Start](#quick-start) • [One-Click Target Run](#one-click-target-run) • [CLI Guide](Documentation/CODEX_MEM.md) • [Architecture](Documentation/ARCHITECTURE.md) • [MCP Tools](Documentation/MCP_TOOLS.md) • [Benchmarks](BENCHMARKS.md)
+[Quick Start](#quick-start) • [Most-Used Scenarios](#most-used-scenarios) • [Landing Page](Documentation/LAKESIDE_MEM_SHOWCASE.html) • [Scenario Research](Documentation/SCENARIO_RESEARCH.md) • [CLI Guide](Documentation/CODEX_MEM.md) • [Architecture](Documentation/ARCHITECTURE.md) • [Benchmarks](BENCHMARKS.md)
 
 Legacy compatibility:
-- `Scripts/codex_mem.sh` remains available as an alias.
-- `Scripts/dev_mem.sh` remains available as an alias.
+- `Scripts/codex_mem.sh` still works.
+- `Scripts/dev_mem.sh` still works.
 
-## What You Get
+## What It Does
 
-- One-click target-project learning/execution entry.
-- Persistent project memory across sessions.
-- Hybrid retrieval (lexical + structure + graph-lite + optional embeddings).
-- Evidence-grounded outputs with file/symbol traceability.
-- Stable output contract with forced next executable command.
+- One-click target repository execution (`run-target` / `run-target-auto`)
+- Persistent project memory across sessions
+- Hybrid retrieval: lexical + structure + graph-lite + optional embeddings
+- Evidence-grounded output with file/symbol traceability
+- Stable output contract with mandatory `forced_next_input`
 
 ## Quick Start
 
-### 1) Prerequisites
-
-- macOS/Linux shell
-- Python 3.10+
-
-### 2) Initialize local memory
+### 1) Initialize local memory
 
 ```bash
 bash Scripts/lakeside_mem.sh init --project demo
 ```
 
-### 3) Ask with memory + repository grounding
-
-```bash
-bash Scripts/lakeside_mem.sh ask "map entrypoint and persistence chain" --project demo
-```
-
-## One-Click Target Run
-
-Use this when you want to run `Lakeside-mem` against another repository.
-
-### Auto mode (natural language in)
-
-```bash
-bash /ABS/PATH/TO/lakeside-mem/Scripts/lakeside_mem.sh \
-  run-target-auto "learn this project: north star, architecture, module map, entrypoint, main flow, persistence, ai generation, tests, risks"
-```
-
-### Explicit target root mode
+### 2) Run against a target repository
 
 ```bash
 bash /ABS/PATH/TO/lakeside-mem/Scripts/lakeside_mem.sh \
   run-target "/ABS/PATH/TO/TARGET_PROJECT" \
   --project target \
-  --question "learn this project: north star, architecture, module map, entrypoint, main flow, persistence, ai generation, tests, risks"
+  --question "learn this project: goal, architecture, module map, entrypoint, main flow, persistence, ai generation, tests, risks"
 ```
 
-### Single-model executor per run
+### 3) Natural language auto mode
 
 ```bash
 bash /ABS/PATH/TO/lakeside-mem/Scripts/lakeside_mem.sh \
-  run-target "/ABS/PATH/TO/TARGET_PROJECT" \
-  --project target \
-  --executor codex \
-  --question "implement feature X with evidence and tests"
+  run-target-auto "learn this project deeply and return evidence-backed conclusions"
 ```
 
-Executor options:
-- `none`
-- `codex`
-- `claude`
+## Most-Used Scenarios
 
-## Typical Workflow
+These are the most frequent workflows across modern coding-agent usage patterns (onboarding, issue fixing, debug loops, implementation, and repo-scale maintenance). The source set is documented in `Documentation/SCENARIO_RESEARCH.md`.
 
-### 1) Capture lifecycle
+### 1) New repo onboarding (first day)
 
 ```bash
-bash Scripts/lakeside_mem.sh session-start s1 --project demo --title "Streaming refactor"
-bash Scripts/lakeside_mem.sh prompt s1 "Map generation and persistence path" --project demo
-bash Scripts/lakeside_mem.sh tool s1 shell "rg -n 'DatabaseBootstrapper|index.ts'" --project demo --title "Locate chain" --compact
-bash Scripts/lakeside_mem.sh stop s1 --project demo --content "checkpoint"
-bash Scripts/lakeside_mem.sh session-end s1 --project demo
+bash Scripts/lakeside_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT" --project target \
+  --question "learn this project: goal, architecture, module map, entrypoint, main flow, persistence, ai generation, tests, risks"
 ```
 
-### 2) Retrieve progressively
+### 2) Bug triage from a failing issue
 
 ```bash
-# Layer 1: compact search
-bash Scripts/lakeside_mem.sh search "persistence bootstrap" --project demo --limit 20
-
-# Layer 2: timeline around one item
-bash Scripts/lakeside_mem.sh timeline E12 --project demo --before 5 --after 5
-
-# Layer 3: full details
-bash Scripts/lakeside_mem.sh get E12 O3 --project demo
+bash Scripts/lakeside_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT" --project target \
+  --question "triage this bug: repro path, root cause chain, minimal-risk fix, validation checklist"
 ```
 
-### 3) Run fused ask
+### 3) Debug a failing test or terminal error
 
 ```bash
-bash Scripts/lakeside_mem.sh ask "map entrypoint, ai generation path, persistence, and top risks" --project demo
+bash Scripts/lakeside_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT" --project target \
+  --question "debug this failure: isolate failing path, show exact evidence, propose smallest fix"
 ```
 
-## Output Contract
+### 4) Implement a feature with guardrails
 
-`ask` responses include:
+```bash
+bash Scripts/lakeside_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT" --project target \
+  --question "implement this feature with minimal patch, compatibility boundaries, tests, and rollout notes"
+```
+
+### 5) Refactor safely in a large codebase
+
+```bash
+bash Scripts/lakeside_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT" --project target \
+  --question "plan and execute a safe refactor: dependency map, blast radius, incremental steps, regression checks"
+```
+
+### 6) PR review and risk scan
+
+```bash
+bash Scripts/lakeside_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT" --project target \
+  --question "review this change: behavior diffs, hidden risks, missing tests, and release impact"
+```
+
+### 7) Incident forensics and timeline reconstruction
+
+```bash
+bash Scripts/lakeside_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT" --project target \
+  --question "reconstruct this incident timeline, identify root cause, and produce a prevention checklist"
+```
+
+### 8) Handoff summary for teammates
+
+```bash
+bash Scripts/lakeside_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT" --project target \
+  --question "generate a handoff: what changed, why, evidence, open risks, and next executable command"
+```
+
+## Runtime & Output Contract
+
+`ask` / `run-target` output includes:
 
 - completion status (`LEARNING_COMPLETE` / `PARTIAL` / `INCOMPLETE`)
 - section coverage report
 - evidence stats
-- mandatory `forced_next_input` command
+- mandatory `forced_next_input`
+- 6-layer runtime metadata (`memory_runtime_layers`)
 
-## Runtime Modes
+## MCP Usage (Local Install, No Store Required)
 
-Read config:
-
-```bash
-bash Scripts/lakeside_mem.sh config-get
-```
-
-Set config:
-
-```bash
-bash Scripts/lakeside_mem.sh config-set --channel beta --viewer-refresh-sec 2 --beta-endless-mode on
-```
-
-## Local Viewer
-
-Start:
-
-```bash
-bash Scripts/lakeside_mem.sh web --project-default demo --host 127.0.0.1 --port 37777
-```
-
-Open: `http://127.0.0.1:37777/`
-
-## MCP Server
-
-Run server:
+Run MCP server:
 
 ```bash
 python3 Scripts/codex_mem_mcp.py --root . --project-default demo
 ```
 
-Register:
+Register locally:
 
 ```bash
 codex mcp add lakeside-mem -- python3 /ABS/PATH/TO/lakeside-mem/Scripts/codex_mem_mcp.py --root /ABS/PATH/TO/lakeside-mem --project-default demo
 ```
 
-Key tools:
+## Benchmarks (Latest)
 
-- retrieval: `mem_search`, `mem_nl_search`, `mem_timeline`, `mem_get_observations`, `mem_ask`
-- lifecycle: `mem_session_start`, `mem_user_prompt_submit`, `mem_post_tool_use`, `mem_stop`, `mem_session_end`
-- runtime: `mem_config_get`, `mem_config_set`
+- prompt compaction saving: `52.86%`
+- scenario max token saving: `99.84%`
+- marketing benchmark saving: `99.84%`
+- runtime pipeline: `4/4` stages passed
 
-## Benchmarks
-
-Run standardized runtime pipeline:
+Run pipeline:
 
 ```bash
 python3 Scripts/benchmark_runtime_pipeline.py \
@@ -169,19 +146,9 @@ python3 Scripts/benchmark_runtime_pipeline.py \
   --checkpoint Documentation/benchmarks/runtime_pipeline_checkpoint.json
 ```
 
-Generate PMF dashboard:
+## Keep It Simple
 
-```bash
-python3 Scripts/build_pmf_dashboard.py --root . --out Documentation/benchmarks/PMF_DASHBOARD.md
-```
-
-## Project Structure
-
-- `Scripts/codex_mem.py`: CLI engine and runtime entry.
-- `Scripts/lakeside_mem.sh`: shell entrypoints including `run-target` and `run-target-auto`.
-- `Scripts/memory_runtime/`: plan/retrieval/execution contracts.
-- `Scripts/tests/`: unit and e2e tests.
-- `Documentation/`: architecture, runtime rules, and guides.
+This is not magic. It is a practical runtime that helps you stop repeating context and start shipping with cleaner evidence.
 
 ## License
 

@@ -5,7 +5,7 @@
     "label": "codex-mem (this repo)",
     "root_redacted": true
   },
-  "question": "Learn this project: north star, architecture, module map, entrypoints, main flow, persistence/output, top risks.",
+  "question": "Learn this project: project goal, architecture, module map, entrypoints, main flow, persistence/output, top risks.",
   "baseline_pack": {
     "file_count": 2,
     "tokens_est_total": 3545,

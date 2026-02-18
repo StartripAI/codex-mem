@@ -780,14 +780,14 @@ def parse_natural_query(query: str, now: dt.datetime | None = None) -> Dict[str,
             "entrypoint",
             "main flow",
             "persistence",
-            "north star",
+            "project goal",
             "学习",
             "架构",
             "模块",
             "入口",
             "主流程",
             "持久化",
-            "北极星",
+            "目标",
             "代码库",
             "仓库",
             "项目",
@@ -2798,10 +2798,10 @@ def _profile_prompt_template(profile_name: str) -> Tuple[str, str]:
     profile = (profile_name or "").strip().lower()
     if profile == "onboarding":
         zh = (
-            "学习这个项目：北极星、架构、模块地图、入口、主流程、持久化、AI 生成链路、风险。"
+            "学习这个项目：目标、架构、模块地图、入口、主流程、持久化、AI 生成链路、风险。"
         )
         en = (
-            "learn this project: north star, architecture, module map, entrypoint, main flow, "
+            "learn this project: project goal, architecture, module map, entrypoint, main flow, "
             "persistence, ai generation, risks"
         )
         return zh, en
@@ -2902,7 +2902,7 @@ def build_forced_next_input(
         "1) 必须通过 Lakeside-mem run-target 入口执行，不使用其他入口。\n"
         "2) 目标根目录解析：优先请求中绝对路径，否则当前工作区根目录；若仍不可判定则输出 TARGET_ROOT_REQUIRED。\n"
         "3) 首读顺序固定为先文档后代码与测试。\n"
-        "4) 输出结构固定为 MECE 七部分：北极星与边界、架构与模块地图、入口与主流程、持久化链路、AI 生成链路、测试现状与质量、关键风险与优先级。\n"
+        "4) 输出结构固定为 MECE 七部分：目标与边界、架构与模块地图、入口与主流程、持久化链路、AI 生成链路、测试现状与质量、关键风险与优先级。\n"
         "5) 每部分至少 3 条证据，证据格式固定：绝对文件路径 + 关键符号 + 作用说明。\n"
         "6) 任一部分证据不足时，当前轮次内自动补检并补齐，再给结论。\n"
         "7) 结果必须包含 P0/P1/P2 行动清单与下一条可执行命令。\n"

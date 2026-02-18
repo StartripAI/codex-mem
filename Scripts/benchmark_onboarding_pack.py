@@ -186,7 +186,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--question",
-        default="Learn this project: north star, architecture, module map, entrypoints, main flow, persistence/output, top risks.",
+        default="Learn this project: project goal, architecture, module map, entrypoints, main flow, persistence/output, top risks.",
         help="Onboarding question for codex-mem ask.",
     )
     parser.add_argument("--search-limit", type=int, default=6)

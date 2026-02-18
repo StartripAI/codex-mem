@@ -31,7 +31,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--root", default=".")
     p.add_argument(
         "--question",
-        default="Learn this project: north star, architecture, module map, entrypoints, main flow, persistence, top risks",
+        default="Learn this project: project goal, architecture, module map, entrypoints, main flow, persistence, top risks",
     )
     p.add_argument("--runs", type=int, default=3)
     p.add_argument("--out", default="-")

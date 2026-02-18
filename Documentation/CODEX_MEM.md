@@ -26,7 +26,7 @@ For target repositories outside this repo, execute only via `run-target` with ex
 bash /ABS/PATH/TO/lakeside-mem/Scripts/lakeside_mem.sh \
   run-target "/ABS/PATH/TO/TARGET_PROJECT" \
   --project target \
-  --question "learn this project: north star, architecture, module map, entrypoint, main flow, persistence, ai generation, risks."
+  --question "learn this project: project goal, architecture, module map, entrypoint, main flow, persistence, ai generation, risks."
 ```
 
 Hard rules:
@@ -38,7 +38,7 @@ One-click natural-language entry:
 
 ```bash
 bash /ABS/PATH/TO/lakeside-mem/Scripts/lakeside_mem.sh \
-  run-target-auto "learn this project: north star, architecture, module map, entrypoint, main flow, persistence, ai generation, risks"
+  run-target-auto "learn this project: project goal, architecture, module map, entrypoint, main flow, persistence, ai generation, risks"
 ```
 
 When root detection fails, output token is:

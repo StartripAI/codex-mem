@@ -136,7 +136,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--question",
-        default="Learn this project: north star, architecture, modules, entrypoints, main flow, persistence/output, top risks.",
+        default="Learn this project: project goal, architecture, modules, entrypoints, main flow, persistence/output, top risks.",
         help="Onboarding question used for prompt generation.",
     )
     parser.add_argument(
