@@ -25,7 +25,7 @@ python3 Scripts/codex_mem_mcp.py --root .
 - Start viewer explicitly:
 
 ```bash
-bash Scripts/codex_mem.sh web --host 127.0.0.1 --port 37777
+bash Scripts/dev_mem.sh web --host 127.0.0.1 --port 37777
 ```
 
 - Check health endpoint:
@@ -42,7 +42,7 @@ curl -s http://127.0.0.1:37777/api/health
 - Ensure session was closed to generate summaries:
 
 ```bash
-bash Scripts/codex_mem.sh session-end <session_id> --project <project>
+bash Scripts/dev_mem.sh session-end <session_id> --project <project>
 ```
 
 - For private records, use `--include-private`.
@@ -62,7 +62,7 @@ bash Scripts/codex_mem.sh session-end <session_id> --project <project>
 - Read current runtime config:
 
 ```bash
-bash Scripts/codex_mem.sh config-get
+bash Scripts/dev_mem.sh config-get
 ```
 
 - If channel is `stable`, auto endless compaction is disabled by design.

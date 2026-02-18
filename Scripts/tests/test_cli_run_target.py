@@ -10,7 +10,7 @@ import unittest
 class CliRunTargetTests(unittest.TestCase):
     def test_run_target_executes_ask_on_explicit_root(self) -> None:
         repo_root = pathlib.Path(__file__).resolve().parents[2]
-        shell_script = repo_root / "Scripts" / "codex_mem.sh"
+        shell_script = repo_root / "Scripts" / "dev_mem.sh"
         self.assertTrue(shell_script.exists(), f"missing shell script: {shell_script}")
 
         with tempfile.TemporaryDirectory(prefix="codex_mem_target_") as tmp:
@@ -39,7 +39,7 @@ class CliRunTargetTests(unittest.TestCase):
 
     def test_run_target_auto_detects_target_root_from_question(self) -> None:
         repo_root = pathlib.Path(__file__).resolve().parents[2]
-        shell_script = repo_root / "Scripts" / "codex_mem.sh"
+        shell_script = repo_root / "Scripts" / "dev_mem.sh"
         self.assertTrue(shell_script.exists(), f"missing shell script: {shell_script}")
 
         with tempfile.TemporaryDirectory(prefix="codex_mem_target_auto_") as tmp:
@@ -63,7 +63,7 @@ class CliRunTargetTests(unittest.TestCase):
 
     def test_run_target_auto_returns_required_token_when_unresolved(self) -> None:
         repo_root = pathlib.Path(__file__).resolve().parents[2]
-        shell_script = repo_root / "Scripts" / "codex_mem.sh"
+        shell_script = repo_root / "Scripts" / "dev_mem.sh"
         self.assertTrue(shell_script.exists(), f"missing shell script: {shell_script}")
 
         cmd = [

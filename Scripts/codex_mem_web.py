@@ -50,7 +50,7 @@ def html_page() -> str:
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>codex-mem viewer</title>
+  <title>dev-mem viewer</title>
   <style>
     :root {
       --bg: #f5f7fb;
@@ -157,7 +157,7 @@ def html_page() -> str:
 </head>
 <body>
   <div class="panel">
-    <h1>codex-mem local viewer</h1>
+    <h1>dev-mem local viewer</h1>
     <div class="muted">Real-time memory stream, session summaries, natural-language mem-search, and stable/beta runtime switch.</div>
     <div class="row">
       <label>Project <input id="project" value="default" /></label>
@@ -448,7 +448,7 @@ class ViewerHandler(BaseHTTPRequestHandler):
                 self._html(html_page())
                 return
             if path == "/api/health":
-                self._json({"ok": True, "service": "codex-mem-viewer"})
+                self._json({"ok": True, "service": "dev-mem-viewer"})
                 return
             if path == "/api/config":
                 conn = self.server.open_conn()
@@ -645,7 +645,7 @@ class ViewerServer(ThreadingHTTPServer):
 
 
 def main(argv: List[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="codex-mem local web viewer")
+    parser = argparse.ArgumentParser(description="dev-mem local web viewer")
     parser.add_argument("--root", default=".", help="Repository root")
     parser.add_argument("--index-dir", default=".codex_mem")
     parser.add_argument("--project-default", default="default")

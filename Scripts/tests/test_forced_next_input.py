@@ -34,7 +34,7 @@ class ForcedNextInputTests(unittest.TestCase):
         self.assertIn('--project "my-project"', str(nxt.get("command_template_zh", "")))
         self.assertNotIn("command_template_py_zh", nxt)
         self.assertNotIn("command_template_py_en", nxt)
-        self.assertEqual(str(nxt.get("callable_prompt_contract", "")), "must_call_codex_mem_only")
+        self.assertEqual(str(nxt.get("callable_prompt_contract", "")), "must_call_dev_mem_only")
         self.assertEqual(str(nxt.get("execution_contract", "")), "must_execute_when_capable")
         self.assertEqual(
             str(nxt.get("learning_completion_contract", "")),
@@ -71,7 +71,7 @@ class ForcedNextInputTests(unittest.TestCase):
         gate_sections = nxt.get("learning_gate_required_sections", [])
         self.assertIn("north_star", gate_sections)
         self.assertIn("tests", gate_sections)
-        self.assertIn("codex-mem run-target", str(nxt.get("callable_prompt_zh", "")))
+        self.assertIn("dev-mem run-target", str(nxt.get("callable_prompt_zh", "")))
         self.assertIn("run-target", str(nxt.get("callable_prompt_zh", "")))
         self.assertIn("TARGET_ROOT_REQUIRED", str(nxt.get("callable_prompt_zh", "")))
         self.assertIn("LEARNING_COMPLETE/PARTIAL/INCOMPLETE", str(nxt.get("callable_prompt_zh", "")))
@@ -92,7 +92,7 @@ class ForcedNextInputTests(unittest.TestCase):
         )
         forbidden = nxt.get("forbidden_output_patterns", [])
         self.assertIn("non_executable_prompt_only", forbidden)
-        self.assertIn("generic_advice_without_codex_mem_call", forbidden)
+        self.assertIn("generic_advice_without_dev_mem_call", forbidden)
         self.assertIn("python_direct_entrypoint", forbidden)
         self.assertIn("claim_not_executed_without_attempt", forbidden)
         self.assertNotIn("completion_percentage_guess", forbidden)

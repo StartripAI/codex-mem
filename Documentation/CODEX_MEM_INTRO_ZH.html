@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>dev-mem｜开发者工作流 Memory Runtime</title>
+  <style>
+    :root {
+      --bg-a: #f6f1ff;
+      --bg-b: #fff8fc;
+      --bg-c: #f3fff8;
+      --ink: #1f2330;
+      --ink-sub: #4a5266;
+      --glass: rgba(255, 255, 255, 0.45);
+      --line: rgba(255, 255, 255, 0.65);
+      --shadow: 0 18px 50px rgba(111, 89, 170, 0.15);
+      --accent-1: #b695ff;
+      --accent-2: #ff9fcd;
+      --accent-3: #89ddb4;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Noto Sans SC", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(45rem 45rem at 5% 10%, rgba(182,149,255,0.28), transparent 60%),
+        radial-gradient(42rem 42rem at 95% 5%, rgba(255,159,205,0.24), transparent 62%),
+        radial-gradient(42rem 42rem at 50% 95%, rgba(137,221,180,0.25), transparent 60%),
+        linear-gradient(135deg, var(--bg-a), var(--bg-b) 55%, var(--bg-c));
+      overflow-x: hidden;
+    }
+
+    .noise {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.16;
+      mix-blend-mode: soft-light;
+      background-image:
+        radial-gradient(circle at 30% 20%, rgba(255,255,255,0.8) 0, transparent 35%),
+        radial-gradient(circle at 70% 80%, rgba(255,255,255,0.65) 0, transparent 38%);
+      filter: blur(20px);
+    }
+
+    .wrap {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 56px 20px 72px;
+    }
+
+    .glass {
+      position: relative;
+      background: linear-gradient(145deg, rgba(255,255,255,0.58), rgba(255,255,255,0.28));
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      backdrop-filter: blur(14px) saturate(130%);
+      -webkit-backdrop-filter: blur(14px) saturate(130%);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      padding: 30px 30px 26px;
+      margin-bottom: 18px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: #35374b;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(255,255,255,0.8);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--accent-1), var(--accent-2), var(--accent-3));
+    }
+
+    h1 {
+      font-size: clamp(30px, 5vw, 52px);
+      line-height: 1.08;
+      margin: 16px 0 14px;
+      letter-spacing: -0.02em;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--ink-sub);
+      font-size: clamp(15px, 2vw, 18px);
+      line-height: 1.75;
+      max-width: 940px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .stat {
+      padding: 12px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.58);
+      border: 1px solid rgba(255,255,255,0.72);
+      min-height: 94px;
+    }
+
+    .stat .k {
+      font-size: 23px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-top: 8px;
+    }
+
+    .stat .v {
+      font-size: 12px;
+      color: var(--ink-sub);
+      line-height: 1.4;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .card {
+      padding: 22px 22px;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 22px;
+      letter-spacing: -0.02em;
+    }
+
+    ol {
+      margin: 0;
+      padding-left: 20px;
+      color: #2d3345;
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    li + li { margin-top: 8px; }
+
+    .closing {
+      margin-top: 16px;
+      padding: 24px;
+      font-size: 16px;
+      color: #2d3345;
+      line-height: 1.8;
+    }
+
+    .footer {
+      margin-top: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      color: var(--ink-sub);
+      font-size: 14px;
+    }
+
+    a {
+      color: #3f51cf;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(63,81,207,0.26);
+    }
+
+    a:hover { opacity: 0.85; }
+
+    @media (max-width: 920px) {
+      .stats { grid-template-columns: 1fr 1fr; }
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { padding: 28px 14px 34px; }
+      .hero { padding: 20px 16px 18px; }
+      .card, .closing { padding: 16px; }
+      .stats { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <main class="wrap">
+    <section class="hero glass">
+      <span class="badge"><span class="dot"></span>dev-mem｜Developer Memory Runtime</span>
+      <h1>dev-mem：开发者长任务记忆运行时</h1>
+      <p class="lead">
+        dev-mem 是一个面向 Coding/Vibe Coding 的项目级记忆系统。它把文档与代码证据持续写入 Memory Index，
+        通过 <strong>TaskSpec → ExecutionPlan → Evidence Pack → Coverage Gate</strong> 的执行链，
+        在不反复堆上下文的前提下完成深度学习、实现与迭代。
+      </p>
+      <div class="stats">
+        <article class="stat">
+          <div class="v">Prompt 压缩节省</div>
+          <div class="k">52.86%</div>
+          <div class="v">vs legacy prompt</div>
+        </article>
+        <article class="stat">
+          <div class="v">场景最大 token 节省</div>
+          <div class="k">99.84%</div>
+          <div class="v">scenario_savings_latest</div>
+        </article>
+        <article class="stat">
+          <div class="v">营销基准 token 节省</div>
+          <div class="k">99.84%</div>
+          <div class="v">marketing_claims_latest</div>
+        </article>
+        <article class="stat">
+          <div class="v">Runtime Pipeline</div>
+          <div class="k">4/4</div>
+          <div class="v">stages passed</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="card glass">
+        <h2>核心工作流</h2>
+        <ol>
+          <li>冷启动接入：`run-target-auto` 或 `run-target` 识别目标仓库并生成 TaskSpec。</li>
+          <li>任务编译：Task Compiler 将自然语言编译为 ExecutionPlan（docs-first + code-second）。</li>
+          <li>证据入库：把事件、观察、符号证据写入 SQLite/FTS/graph-lite Memory Index。</li>
+          <li>混合检索：lexical + structure + graph-lite + optional embedding + rerank。</li>
+          <li>单模型执行：`--executor {none|codex|claude}`，每次运行只用一个模型。</li>
+          <li>质量交付：Coverage Gate + Critic + Stuck Detector 输出结论与 `forced_next_input`。</li>
+        </ol>
+      </article>
+
+      <article class="card glass">
+        <h2>辅助工作流</h2>
+        <ol>
+          <li>覆盖恢复：coverage recovery loop 自动补齐缺失章节与证据链。</li>
+          <li>可观测评测：benchmark runtime pipeline + PMF dashboard 持续追踪效率与稳定性。</li>
+          <li>MCP 生态接入：通过 `mem_ask / mem_search / mem_timeline` 直接在 IDE/Agent 调用。</li>
+          <li>执行契约稳定：输出统一包含 completion、coverage、evidence stats、next command。</li>
+          <li>本地优先：默认本地持久化，支持无 embedding 退化路径，低门槛部署。</li>
+          <li>持续迭代：基于基准结果调优检索权重、上下文预算和 gating 策略。</li>
+        </ol>
+      </article>
+    </section>
+
+    <section class="closing glass">
+      dev-mem 不只是一个“省 token”的脚本集合，它是一套可执行的开发工作流方法论：
+      用 Memory Runtime 管理上下文成本，用证据链约束结论质量，用稳定输出契约驱动连续迭代。
+      从第一条自然语言指令开始，让模型在目标项目里更快收敛、更少重复、更可追溯。
+      <div class="footer">
+        <span>仓库地址：</span>
+        <a href="https://github.com/StartripAI/codex-mem" target="_blank" rel="noreferrer">https://github.com/StartripAI/codex-mem</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

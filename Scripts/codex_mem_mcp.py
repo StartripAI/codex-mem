@@ -30,7 +30,7 @@ import traceback
 from typing import Any, Dict, List, Mapping, Sequence
 
 
-SERVER_NAME = "codex-mem-mcp"
+SERVER_NAME = "dev-mem-mcp"
 SERVER_VERSION = "0.3.0"
 PROTOCOL_VERSION = "2024-11-05"
 
@@ -324,7 +324,7 @@ class CodexMemMCPServer:
         if proc.returncode != 0:
             raise MCPError(
                 -32000,
-                "codex_mem command failed",
+                "dev_mem command failed",
                 {"cmd": cmd, "stderr": proc.stderr.strip(), "stdout": proc.stdout.strip()},
             )
         out = proc.stdout.strip()
@@ -615,7 +615,7 @@ class CodexMemMCPServer:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="MCP server for codex_mem.py")
+    parser = argparse.ArgumentParser(description="MCP server for dev-mem runtime")
     parser.add_argument("--root", default=".", help="Repository root containing Scripts/codex_mem.py")
     parser.add_argument("--index-dir", default=".codex_mem")
     parser.add_argument("--project-default", default="default")

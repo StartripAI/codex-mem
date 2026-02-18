@@ -1,6 +1,6 @@
 # 6-Layer Memory Runtime
 
-`codex-mem` is implemented as a developer memory runtime with strict layer contracts.
+`dev-mem` is implemented as a developer memory runtime with strict layer contracts.
 
 ## Layer Contracts
 

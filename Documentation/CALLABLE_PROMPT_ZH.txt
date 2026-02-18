@@ -1,1 +1,1 @@
-通过 codex-mem run-target 执行目标项目深度首读并返回结果；自动识别目标项目根目录与项目名，无法识别时返回 TARGET_ROOT_REQUIRED；完成度按证据返回 LEARNING_COMPLETE/PARTIAL/INCOMPLETE（有进展默认 PARTIAL，仅证据严重不足时 INCOMPLETE）。
+通过 dev-mem run-target 执行目标项目深度首读并返回结果；自动识别目标项目根目录与项目名，无法识别时返回 TARGET_ROOT_REQUIRED；完成度按证据返回 LEARNING_COMPLETE/PARTIAL/INCOMPLETE（有进展默认 PARTIAL，仅证据严重不足时 INCOMPLETE）。

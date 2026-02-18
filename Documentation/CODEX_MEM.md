@@ -1,6 +1,6 @@
-# Codex-Mem Operational Guide
+# Dev-Mem Operational Guide
 
-This guide describes production-style operation of `codex-mem` in Codex workflows.
+This guide describes production-style operation of `dev-mem` in IDE/CLI workflows.
 
 ## 1) Objectives
 
@@ -12,32 +12,32 @@ This guide describes production-style operation of `codex-mem` in Codex workflow
 ## 2) Components
 
 - `Scripts/codex_mem.py`: core engine and CLI
-- `Scripts/codex_mem_mcp.py`: MCP server for Codex
+- `Scripts/codex_mem_mcp.py`: MCP server
 - `Scripts/codex_mem_web.py`: local web viewer
-- `Scripts/codex_mem.sh`: shell wrapper
+- `Scripts/dev_mem.sh`: shell wrapper
 - `Scripts/repo_knowledge.py`: code retrieval engine used by `ask`
-- `Skills/codex-mem/`: Codex skill package
+- `Skills/dev-mem/`: Codex skill package
 
 ## 2.5) Cross-Repo Entrypoint (Hard Requirement)
 
 For target repositories outside this repo, execute only via `run-target` with explicit target root:
 
 ```bash
-bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+bash /ABS/PATH/TO/dev-mem/Scripts/dev_mem.sh \
   run-target "/ABS/PATH/TO/TARGET_PROJECT" \
   --project target \
   --question "learn this project: north star, architecture, module map, entrypoint, main flow, persistence, ai generation, risks."
 ```
 
 Hard rules:
-- do not bypass `codex_mem.sh run-target` in cross-repo runs
+- do not bypass `dev_mem.sh run-target` in cross-repo runs
 - do not omit explicit target root path
 - do not return non-executable guidance
 
 One-click natural-language entry:
 
 ```bash
-bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+bash /ABS/PATH/TO/dev-mem/Scripts/dev_mem.sh \
   run-target-auto "learn this project: north star, architecture, module map, entrypoint, main flow, persistence, ai generation, risks"
 ```
 
@@ -50,7 +50,7 @@ TARGET_ROOT_REQUIRED
 Single-model runtime switch (per run):
 
 ```bash
-bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+bash /ABS/PATH/TO/dev-mem/Scripts/dev_mem.sh \
   run-target "/ABS/PATH/TO/TARGET_PROJECT" \
   --project target \
   --executor codex \
@@ -60,7 +60,7 @@ bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
 ## 3) Initialization
 
 ```bash
-bash Scripts/codex_mem.sh init --project my-project
+bash Scripts/dev_mem.sh init --project my-project
 ```
 
 Data location:
@@ -79,11 +79,11 @@ Recommended sequence per session:
 Example:
 
 ```bash
-bash Scripts/codex_mem.sh session-start s100 --project my-project --title "Refactor stream pipeline"
-bash Scripts/codex_mem.sh prompt s100 "Map current bottlenecks and propose safe migration order" --project my-project
-bash Scripts/codex_mem.sh tool s100 shell "rg -n 'stream' App" --project my-project --compact
-bash Scripts/codex_mem.sh stop s100 --project my-project --content "checkpoint after search"
-bash Scripts/codex_mem.sh session-end s100 --project my-project
+bash Scripts/dev_mem.sh session-start s100 --project my-project --title "Refactor stream pipeline"
+bash Scripts/dev_mem.sh prompt s100 "Map current bottlenecks and propose safe migration order" --project my-project
+bash Scripts/dev_mem.sh tool s100 shell "rg -n 'stream' App" --project my-project --compact
+bash Scripts/dev_mem.sh stop s100 --project my-project --content "checkpoint after search"
+bash Scripts/dev_mem.sh session-end s100 --project my-project
 ```
 
 ## 5) Progressive Retrieval Workflow
@@ -91,31 +91,31 @@ bash Scripts/codex_mem.sh session-end s100 --project my-project
 ### Layer 1: compact retrieval
 
 ```bash
-bash Scripts/codex_mem.sh search "streaming orchestration" --project my-project --limit 20
+bash Scripts/dev_mem.sh search "streaming orchestration" --project my-project --limit 20
 ```
 
 ### Layer 1 (NL): mem-search
 
 ```bash
-bash Scripts/codex_mem.sh mem-search "what bugs were fixed this week" --project my-project --limit 20
+bash Scripts/dev_mem.sh mem-search "what bugs were fixed this week" --project my-project --limit 20
 ```
 
 ### Layer 2: timeline neighborhood
 
 ```bash
-bash Scripts/codex_mem.sh timeline E42 --before 5 --after 5
+bash Scripts/dev_mem.sh timeline E42 --before 5 --after 5
 ```
 
 ### Layer 3: full details
 
 ```bash
-bash Scripts/codex_mem.sh get E42 O8 O9
+bash Scripts/dev_mem.sh get E42 O8 O9
 ```
 
 ## 6) Fused Retrieval (Memory + Repo)
 
 ```bash
-bash Scripts/codex_mem.sh ask "What is the stream update chain from input to persisted output?" --project my-project
+bash Scripts/dev_mem.sh ask "What is the stream update chain from input to persisted output?" --project my-project
 ```
 
 `ask` fuses:
@@ -128,7 +128,7 @@ bash Scripts/codex_mem.sh ask "What is the stream update chain from input to per
 Example with executor + recovery controls:
 
 ```bash
-bash Scripts/codex_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT" \
+bash Scripts/dev_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT" \
   --project target \
   --executor codex \
   --question "learn this project: architecture, persistence, risks" \
@@ -140,13 +140,13 @@ bash Scripts/codex_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT" \
 Read runtime config:
 
 ```bash
-bash Scripts/codex_mem.sh config-get
+bash Scripts/dev_mem.sh config-get
 ```
 
 Update runtime config:
 
 ```bash
-bash Scripts/codex_mem.sh config-set --channel beta --viewer-refresh-sec 2 --beta-endless-mode on
+bash Scripts/dev_mem.sh config-set --channel beta --viewer-refresh-sec 2 --beta-endless-mode on
 ```
 
 Behavior summary:
@@ -168,7 +168,7 @@ Privacy controls:
 Example:
 
 ```bash
-bash Scripts/codex_mem.sh tool s100 shell "credential=<REDACTED_VALUE>" --project my-project \
+bash Scripts/dev_mem.sh tool s100 shell "credential=<REDACTED_VALUE>" --project my-project \
   --tag auth --privacy-tag private --privacy-tag redact
 ```
 
@@ -179,7 +179,7 @@ Default retrieval excludes private records unless `--include-private` is set.
 Start:
 
 ```bash
-bash Scripts/codex_mem.sh web --project-default my-project --host 127.0.0.1 --port 37777
+bash Scripts/dev_mem.sh web --project-default my-project --host 127.0.0.1 --port 37777
 ```
 
 Capabilities:
@@ -199,7 +199,7 @@ python3 Scripts/codex_mem_mcp.py --root . --project-default my-project
 Register with Codex:
 
 ```bash
-codex mcp add codex-mem -- python3 /ABS/PATH/codex-mem/Scripts/codex_mem_mcp.py --root /ABS/PATH/codex-mem --project-default my-project
+codex mcp add dev-mem -- python3 /ABS/PATH/TO/dev-mem/Scripts/codex_mem_mcp.py --root /ABS/PATH/TO/dev-mem --project-default my-project
 ```
 
 Key tools:
@@ -212,7 +212,7 @@ Key tools:
 Export one session (anonymized by default):
 
 ```bash
-bash Scripts/codex_mem.sh export-session s100 --anonymize on --output /tmp/s100_export.json
+bash Scripts/dev_mem.sh export-session s100 --anonymize on --output /tmp/s100_export.json
 ```
 
 Use cases:

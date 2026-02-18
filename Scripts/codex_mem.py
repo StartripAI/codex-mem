@@ -204,7 +204,7 @@ def open_db(root: pathlib.Path, index_dir: str) -> sqlite3.Connection:
     detail = str(last_exc) if last_exc else "unknown sqlite operational error"
     raise sqlite3.OperationalError(
         f"failed to open sqlite database at {db_path}: {detail}.{legacy_hint} "
-        "Try: `bash Scripts/codex_mem.sh init --project demo` and retry."
+        "Try: `bash Scripts/dev_mem.sh init --project demo` and retry."
     ) from last_exc
 
 
@@ -571,7 +571,7 @@ def _is_ignored_git_status_path(path: str) -> bool:
 
 def git_status_porcelain_filtered(root: pathlib.Path) -> str:
     """
-    Return `git status --porcelain` output, filtered to ignore codex-mem generated dirs.
+    Return `git status --porcelain` output, filtered to ignore dev-mem generated dirs.
 
     Important: we keep the raw line endings stable so the hash matches what repo_knowledge writes.
     """
@@ -2819,7 +2819,10 @@ def _profile_prompt_template(profile_name: str) -> Tuple[str, str]:
 
 
 def _is_codex_mem_repo_root(root: pathlib.Path) -> bool:
-    return (root / "Scripts" / "codex_mem.py").exists() and (root / "Scripts" / "codex_mem.sh").exists()
+    scripts = root / "Scripts"
+    if not (scripts / "codex_mem.py").exists():
+        return False
+    return (scripts / "codex_mem.sh").exists() or (scripts / "dev_mem.sh").exists()
 
 
 def _slugify_project_name(name: str) -> str:
@@ -2859,7 +2862,10 @@ def build_forced_next_input(
     coverage_gate: Mapping[str, object],
 ) -> Dict[str, object]:
     script_path = pathlib.Path(__file__).resolve()
-    shell_path = script_path.with_suffix(".sh")
+    scripts_dir = script_path.parent
+    shell_path = scripts_dir / "dev_mem.sh"
+    if not shell_path.exists():
+        shell_path = script_path.with_suffix(".sh")
     root_abs = str(root.resolve())
     zh_prompt, en_prompt = _profile_prompt_template(profile_name)
     required_fields = ["mapping_decision", "coverage_gate", "prompt_plan", "prompt_metrics"]
@@ -2880,14 +2886,14 @@ def build_forced_next_input(
         "禁止输出与执行无关的解释文本。"
     )
     router_backend_prompt_zh = (
-        "后台执行约束：只允许使用 codex-mem 标准入口命令。\n"
+        "后台执行约束：只允许使用 dev-mem 标准入口命令。\n"
         f'命令模板：bash {shell_path} run-target "<TARGET_ROOT_ABS>" --project "<PROJECT_SLUG>" --question "<TASK>"。\n'
-        "TARGET_ROOT_ABS 识别顺序：用户给的绝对路径 > 当前工作区根目录（且不能是 codex-mem 仓库）。\n"
+        "TARGET_ROOT_ABS 识别顺序：用户给的绝对路径 > 当前工作区根目录（且不能是 dev-mem 仓库）。\n"
         "若无法确定 TARGET_ROOT_ABS，输出 TARGET_ROOT_REQUIRED。"
     )
     backend_sop_zh = (
         "SOP（写死）：\n"
-        "1) 必须通过 codex-mem run-target 入口执行，不使用其他入口。\n"
+        "1) 必须通过 dev-mem run-target 入口执行，不使用其他入口。\n"
         "2) 目标根目录解析：优先请求中绝对路径，否则当前工作区根目录；若仍不可判定则输出 TARGET_ROOT_REQUIRED。\n"
         "3) 首读顺序固定为先文档后代码与测试。\n"
         "4) 输出结构固定为 MECE 七部分：北极星与边界、架构与模块地图、入口与主流程、持久化链路、AI 生成链路、测试现状与质量、关键风险与优先级。\n"
@@ -2901,7 +2907,7 @@ def build_forced_next_input(
         "仅在证据严重不足时返回 INCOMPLETE。"
     )
     callable_prompt_zh = (
-        "通过 codex-mem run-target 执行目标项目深度首读并返回结果；自动识别目标项目根目录与项目名，无法识别时返回 TARGET_ROOT_REQUIRED；"
+        "通过 dev-mem run-target 执行目标项目深度首读并返回结果；自动识别目标项目根目录与项目名，无法识别时返回 TARGET_ROOT_REQUIRED；"
         "完成度按证据返回 LEARNING_COMPLETE/PARTIAL/INCOMPLETE（有进展默认 PARTIAL，仅证据严重不足时 INCOMPLETE）。"
     )
 
@@ -2916,7 +2922,7 @@ def build_forced_next_input(
             "detected_source": target_root_source,
             "blocked_output_token": "TARGET_ROOT_REQUIRED",
             "hard_rules": [
-                "must_execute_via_codex_mem_sh_run_target",
+                "must_execute_via_dev_mem_sh_run_target",
                 "must_use_explicit_absolute_target_root",
                 "single_line_command_only",
                 "no_python_fallback",
@@ -2933,7 +2939,7 @@ def build_forced_next_input(
             "router_backend_prompt_zh": router_backend_prompt_zh,
             "backend_sop_zh": backend_sop_zh,
             "backend_rules_locked": True,
-            "callable_prompt_contract": "must_call_codex_mem_only",
+            "callable_prompt_contract": "must_call_dev_mem_only",
             "execution_contract": "must_execute_when_capable",
             "learning_completion_contract": "completion_ratio_allowed_with_evidence_basis",
             "learning_complete_token": "LEARNING_COMPLETE",
@@ -2981,14 +2987,14 @@ def build_forced_next_input(
             "callable_prompt_zh": callable_prompt_zh,
             "output_contract": "single_line_shell_command_only",
             "output_if_target_root_missing": "TARGET_ROOT_REQUIRED",
-            "forbidden_output_patterns": [
-                "non_executable_prompt_only",
-                "generic_advice_without_codex_mem_call",
-                "python_direct_entrypoint",
-                "claim_not_executed_without_attempt",
-                "shallow_one_pass_summary",
-                "always_incomplete_on_progress_query",
-            ],
+        "forbidden_output_patterns": [
+            "non_executable_prompt_only",
+            "generic_advice_without_dev_mem_call",
+            "python_direct_entrypoint",
+            "claim_not_executed_without_attempt",
+            "shallow_one_pass_summary",
+            "always_incomplete_on_progress_query",
+        ],
         },
         "acceptance_gate": {
             "onboarding_requires": ["mapping_decision.profile=onboarding", "coverage_gate.pass=true"],
@@ -3711,7 +3717,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "stage": str(getattr(args, "command", "unknown")),
             "error": "sqlite_operational_error",
             "message": str(exc),
-            "hint": "Run `bash Scripts/codex_mem.sh init --project demo`, then retry.",
+            "hint": "Run `bash Scripts/dev_mem.sh init --project demo`, then retry.",
         }
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return 1

@@ -64,7 +64,7 @@ class CliE2EForcedNextInputTests(unittest.TestCase):
             self.assertIn("--project", str(next_input.get("command_template_zh", "")))
             self.assertNotIn("command_template_py_zh", next_input)
             self.assertNotIn("command_template_py_en", next_input)
-            self.assertEqual(str(next_input.get("callable_prompt_contract", "")), "must_call_codex_mem_only")
+            self.assertEqual(str(next_input.get("callable_prompt_contract", "")), "must_call_dev_mem_only")
             self.assertEqual(str(next_input.get("execution_contract", "")), "must_execute_when_capable")
             self.assertEqual(
                 str(next_input.get("learning_completion_contract", "")),

@@ -9,20 +9,20 @@
 ## Clone
 
 ```bash
-git clone https://github.com/<YOUR_ORG_OR_USER>/codex-mem.git
-cd codex-mem
+git clone https://github.com/<YOUR_ORG_OR_USER>/dev-mem.git
+cd dev-mem
 ```
 
 ## Initialize Local Memory Store
 
 ```bash
-bash Scripts/codex_mem.sh init --project demo
+bash Scripts/dev_mem.sh init --project demo
 ```
 
 ## Optional: Start Local Web Viewer
 
 ```bash
-bash Scripts/codex_mem.sh web --project-default demo --host 127.0.0.1 --port 37777
+bash Scripts/dev_mem.sh web --project-default demo --host 127.0.0.1 --port 37777
 ```
 
 Open:
@@ -31,7 +31,7 @@ Open:
 ## Optional: Register MCP in Codex
 
 ```bash
-codex mcp add codex-mem -- python3 /ABS/PATH/codex-mem/Scripts/codex_mem_mcp.py --root /ABS/PATH/codex-mem --project-default demo
+codex mcp add dev-mem -- python3 /ABS/PATH/dev-mem/Scripts/codex_mem_mcp.py --root /ABS/PATH/dev-mem --project-default demo
 ```
 
 ## Verify
@@ -43,10 +43,10 @@ python3 Scripts/codex_mem_smoketest.py --root .
 ## Optional: Launch Ops Toolkit Commands
 
 ```bash
-bash Scripts/codex_mem.sh load-demo-data --reset
-bash Scripts/codex_mem.sh make-gifs
-bash Scripts/codex_mem.sh validate-assets --check-readme --strict
-bash Scripts/codex_mem.sh social-pack --version v0.3.0
+bash Scripts/dev_mem.sh load-demo-data --reset
+bash Scripts/dev_mem.sh make-gifs
+bash Scripts/dev_mem.sh validate-assets --check-readme --strict
+bash Scripts/dev_mem.sh social-pack --version v0.3.0
 ```
 
 Expected output includes:

@@ -1,6 +1,6 @@
 # Prompt Playbook (English, Strict SOP)
 
-This playbook is for short user prompts, but with strict operating rules. `codex-mem` handles routing and prompt shaping internally; users should not send long template prompts.
+This playbook is for short user prompts, but with strict operating rules. `dev-mem` handles routing and prompt shaping internally; users should not send long template prompts.
 
 ## Scope
 
@@ -11,28 +11,28 @@ This playbook is for short user prompts, but with strict operating rules. `codex
 ## Single North Star (Hard Requirement)
 
 The only success criterion is:
-- run a target repository through `codex-mem` automation
+- run a target repository through `dev-mem` automation
 - reduce context/memory waste without losing evidence quality
 
-No workflow is considered valid if it does not run through the `codex-mem` entrypoint with an explicit target root.
+No workflow is considered valid if it does not run through the `dev-mem` entrypoint with an explicit target root.
 
 ## Mandatory Execution Entrypoint (Hard Requirement)
 
-Always execute via `codex_mem.sh run-target` with both:
+Always execute via `dev_mem.sh run-target` with both:
 - explicit `run-target "/ABS/PATH/TO/TARGET_PROJECT"`
 - `--project <target_project_name>`
 
 Canonical command:
 
 ```bash
-bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+bash /ABS/PATH/TO/dev-mem/Scripts/dev_mem.sh \
   run-target "/ABS/PATH/TO/TARGET_PROJECT" \
   --project target \
   --question "learn this project: north star, architecture, module map, entrypoint, main flow, persistence, ai generation, risks."
 ```
 
 Forbidden execution patterns:
-- bypassing `codex_mem.sh run-target` in cross-repo onboarding flows
+- bypassing `dev_mem.sh run-target` in cross-repo onboarding flows
 - running `run-target` without explicit target repository path
 - running without `--project`
 - returning advice without an executable next command
@@ -43,18 +43,18 @@ When the user gives natural language (not CLI args), routing must still output a
 
 Hard routing policy:
 1. Extract target root from user text if an absolute path is present.
-2. Else use current IDE/CLI workspace root if it is not the `codex-mem` repo.
+2. Else use current IDE/CLI workspace root if it is not the `dev-mem` repo.
 3. Else output `TARGET_ROOT_REQUIRED` only.
 4. Output format must be one line command only (no explanation).
 
 ## Callable Prompt Template (Hard Requirement)
 
-Only callable prompts are allowed. Any prompt that cannot trigger `codex-mem` is invalid.
+Only callable prompts are allowed. Any prompt that cannot trigger `dev-mem` is invalid.
 
 Canonical short prompt (ZH):
 
 ```text
-通过 codex-mem run-target 执行目标项目深度首读并返回结果；自动识别目标项目根目录与项目名，无法识别时返回 TARGET_ROOT_REQUIRED。
+通过 dev-mem run-target 执行目标项目深度首读并返回结果；自动识别目标项目根目录与项目名，无法识别时返回 TARGET_ROOT_REQUIRED。
 ```
 
 Backend SOP (hard-locked):
@@ -105,7 +105,7 @@ Output must be returned in exactly this order:
    - `prompt_metrics`
    - `forced_next_input`
 4. One fully executable next `ask` command.
-   - Must use `codex_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT"` format.
+   - Must use `dev_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT"` format.
 
 ### Failure Contract
 
@@ -113,7 +113,7 @@ If `coverage_gate.pass` is `false`, return only:
 1. `INCOMPLETE`
 2. missing category list
 3. one full `ask` command that includes "only fill missing categories"
-   - Must use `codex_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT"` format.
+   - Must use `dev_mem.sh run-target "/ABS/PATH/TO/TARGET_PROJECT"` format.
 
 No additional explanation is allowed in failure mode.
 
@@ -135,7 +135,7 @@ Useful controls:
 ### Step 1: Run onboarding ask
 
 ```bash
-bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+bash /ABS/PATH/TO/dev-mem/Scripts/dev_mem.sh \
   run-target "/ABS/PATH/TO/TARGET_PROJECT" \
   --project target \
   --question "learn this project: north star, architecture, module map, entrypoint, persistence, risks"
@@ -144,7 +144,7 @@ bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
 ### Step 2: Validate routing and coverage (required for first-read)
 
 ```bash
-bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+bash /ABS/PATH/TO/dev-mem/Scripts/dev_mem.sh \
   run-target "/ABS/PATH/TO/TARGET_PROJECT" \
   --project target \
   --question "learn this project: north star, architecture, module map, entrypoint, persistence, risks" \
@@ -183,7 +183,7 @@ Use short task statements:
 ### Case 1: Cold Start (learn project, then standby)
 
 ```bash
-bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+bash /ABS/PATH/TO/dev-mem/Scripts/dev_mem.sh \
   run-target "/ABS/PATH/TO/TARGET_PROJECT" \
   --project target \
   --question "learn this project: architecture, entrypoint, persistence, risks"
@@ -192,7 +192,7 @@ bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
 ### Case 2: Daily Q&A (incremental retrieval)
 
 ```bash
-bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+bash /ABS/PATH/TO/dev-mem/Scripts/dev_mem.sh \
   run-target "/ABS/PATH/TO/TARGET_PROJECT" \
   --project target \
   --question "what changed in generation flow"
@@ -201,7 +201,7 @@ bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
 Strict local routing only:
 
 ```bash
-bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+bash /ABS/PATH/TO/dev-mem/Scripts/dev_mem.sh \
   run-target "/ABS/PATH/TO/TARGET_PROJECT" \
   --project target \
   --question "what changed in generation flow" \
@@ -211,7 +211,7 @@ bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
 ### Case 3: Bug/Incident Triage
 
 ```bash
-bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+bash /ABS/PATH/TO/dev-mem/Scripts/dev_mem.sh \
   run-target "/ABS/PATH/TO/TARGET_PROJECT" \
   --project target \
   --question "triage this regression and provide root cause path"
@@ -220,7 +220,7 @@ bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
 ### Case 4: Implementation Mode
 
 ```bash
-bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+bash /ABS/PATH/TO/dev-mem/Scripts/dev_mem.sh \
   run-target "/ABS/PATH/TO/TARGET_PROJECT" \
   --project target \
   --question "implement this task with minimal compatibility risk"
@@ -229,7 +229,7 @@ bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
 ### Case 5: Legacy Prompt Comparison (regression only)
 
 ```bash
-bash /ABS/PATH/TO/codex-mem/Scripts/codex_mem.sh \
+bash /ABS/PATH/TO/dev-mem/Scripts/dev_mem.sh \
   run-target "/ABS/PATH/TO/TARGET_PROJECT" \
   --project target \
   --question "learn this repo architecture and top risks" \

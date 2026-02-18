@@ -18,31 +18,31 @@ SNAPSHOT_DOCS_SCRIPT="${ROOT}/Scripts/snapshot_docs.sh"
 usage() {
   cat <<'EOF'
 Usage:
-  Scripts/codex_mem.sh run-target <target_root> [--project NAME] [--question Q] [--no-mapping-debug] [-- ask-args...]
-  Scripts/codex_mem.sh run-target-auto "<natural language task>" [--project NAME] [--executor none|codex|claude] [--no-mapping-debug] [-- ask-args...]
-  Scripts/codex_mem.sh init [--project NAME]
-  Scripts/codex_mem.sh session-start <session_id> [--title T]
-  Scripts/codex_mem.sh prompt <session_id> "<user prompt>" [--title T]
-  Scripts/codex_mem.sh tool <session_id> <tool_name> "<tool output>" [--title T] [--file-path P] [--tag X] [--privacy-tag X] [--compact]
-  Scripts/codex_mem.sh stop <session_id> [--title T] [--content C]
-  Scripts/codex_mem.sh session-end <session_id> [--skip-summary]
-  Scripts/codex_mem.sh search "<query>" [--limit N] [--session-id SID]
-  Scripts/codex_mem.sh mem-search "<query>" [--limit N] [--session-id SID]
-  Scripts/codex_mem.sh config-get
-  Scripts/codex_mem.sh config-set [--channel stable|beta] [--viewer-refresh-sec N] [--beta-endless-mode on|off]
-  Scripts/codex_mem.sh export-session <session_id> [--anonymize on|off] [--include-private] [--output PATH]
-  Scripts/codex_mem.sh timeline <E123|O45> [--project NAME] [--before N] [--after N]
-  Scripts/codex_mem.sh get <E123|O45> [more IDs...] [--project NAME]
-  Scripts/codex_mem.sh ask "<question>" [ask-args...]
-  Scripts/codex_mem.sh web [--host 127.0.0.1] [--port 37777] [--project-default NAME]
-  Scripts/codex_mem.sh mcp [--project-default NAME]
-  Scripts/codex_mem.sh load-demo-data [--reset]
-  Scripts/codex_mem.sh make-gifs [--fps N] [--width N]
-  Scripts/codex_mem.sh validate-assets [--check-readme] [--strict]
-  Scripts/codex_mem.sh redact-screenshot <input> <output>
-  Scripts/codex_mem.sh social-pack --version vX.Y.Z
-  Scripts/codex_mem.sh compare-search [--project NAME]
-  Scripts/codex_mem.sh snapshot-docs <version>
+  Scripts/dev_mem.sh run-target <target_root> [--project NAME] [--question Q] [--no-mapping-debug] [-- ask-args...]
+  Scripts/dev_mem.sh run-target-auto "<natural language task>" [--project NAME] [--executor none|codex|claude] [--no-mapping-debug] [-- ask-args...]
+  Scripts/dev_mem.sh init [--project NAME]
+  Scripts/dev_mem.sh session-start <session_id> [--title T]
+  Scripts/dev_mem.sh prompt <session_id> "<user prompt>" [--title T]
+  Scripts/dev_mem.sh tool <session_id> <tool_name> "<tool output>" [--title T] [--file-path P] [--tag X] [--privacy-tag X] [--compact]
+  Scripts/dev_mem.sh stop <session_id> [--title T] [--content C]
+  Scripts/dev_mem.sh session-end <session_id> [--skip-summary]
+  Scripts/dev_mem.sh search "<query>" [--limit N] [--session-id SID]
+  Scripts/dev_mem.sh mem-search "<query>" [--limit N] [--session-id SID]
+  Scripts/dev_mem.sh config-get
+  Scripts/dev_mem.sh config-set [--channel stable|beta] [--viewer-refresh-sec N] [--beta-endless-mode on|off]
+  Scripts/dev_mem.sh export-session <session_id> [--anonymize on|off] [--include-private] [--output PATH]
+  Scripts/dev_mem.sh timeline <E123|O45> [--project NAME] [--before N] [--after N]
+  Scripts/dev_mem.sh get <E123|O45> [more IDs...] [--project NAME]
+  Scripts/dev_mem.sh ask "<question>" [ask-args...]
+  Scripts/dev_mem.sh web [--host 127.0.0.1] [--port 37777] [--project-default NAME]
+  Scripts/dev_mem.sh mcp [--project-default NAME]
+  Scripts/dev_mem.sh load-demo-data [--reset]
+  Scripts/dev_mem.sh make-gifs [--fps N] [--width N]
+  Scripts/dev_mem.sh validate-assets [--check-readme] [--strict]
+  Scripts/dev_mem.sh redact-screenshot <input> <output>
+  Scripts/dev_mem.sh social-pack --version vX.Y.Z
+  Scripts/dev_mem.sh compare-search [--project NAME]
+  Scripts/dev_mem.sh snapshot-docs <version>
 
 Environment overrides:
   ROOT         Repository root (default: parent of Scripts)
@@ -129,10 +129,12 @@ import re
 import sys
 
 question = str(sys.argv[1] if len(sys.argv) > 1 else "")
-codex_mem_root = pathlib.Path(sys.argv[2]).resolve() if len(sys.argv) > 2 else pathlib.Path(".").resolve()
 
 def is_codex_mem_repo_root(path: pathlib.Path) -> bool:
-    return (path / "Scripts" / "codex_mem.py").exists() and (path / "Scripts" / "codex_mem.sh").exists()
+    scripts = path / "Scripts"
+    if not (scripts / "codex_mem.py").exists():
+        return False
+    return (scripts / "codex_mem.sh").exists() or (scripts / "dev_mem.sh").exists()
 
 path_hits = re.findall(r"(/[^\s\"',;]+)", question)
 for raw in path_hits:
